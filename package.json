@@ -1,0 +1,86 @@
+{
+  "name": "ceramic-mark",
+  "displayName": "CeramicMark",
+  "description": "Figma-style visual comment pins on live UI previews, inside your IDE.",
+  "version": "0.1.0",
+  "publisher": "ceramicmark",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "design",
+    "comments",
+    "collaboration",
+    "review",
+    "figma"
+  ],
+  "icon": "images/icon.png",
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "ceramicMark.openPreview",
+        "title": "Open Design Preview",
+        "category": "CeramicMark",
+        "icon": "$(comment-discussion)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "ceramicMark",
+          "title": "CeramicMark",
+          "icon": "$(comment-discussion)"
+        }
+      ]
+    },
+    "views": {
+      "ceramicMark": [
+        {
+          "id": "ceramicMark.comments",
+          "name": "Comments",
+          "type": "tree"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "ceramicMark.openPreview",
+          "when": "view == ceramicMark.comments",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build:ext && npm run build:webview",
+    "build:ext": "node esbuild.config.js --production",
+    "build:webview": "cd webview && npm run build",
+    "watch:ext": "node esbuild.config.js --watch",
+    "watch:webview": "cd webview && npm run dev",
+    "compile": "npm run build:ext && npm run build:webview",
+    "pretest": "npm run compile",
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "@vscode/test-electron": "^2.3.0",
+    "esbuild": "^0.20.0",
+    "eslint": "^8.0.0",
+    "typescript": "^5.3.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ceramicmark/ceramic-mark"
+  }
+}

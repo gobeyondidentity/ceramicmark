@@ -1,0 +1,102 @@
+import React, { useEffect, useReducer, useRef } from 'react';
+import { vscodeApi } from './vscode.js';
+import { Toolbar } from './Toolbar.js';
+import { PreviewFrame } from './PreviewFrame.js';
+import type { Author, Comment, ExtensionMessage } from './types.js';
+
+interface State {
+  previewUrl: string;
+  comments: Comment[];
+  identity: Author | null;
+  commentMode: boolean;
+}
+
+type Action =
+  | { type: 'SET_URL'; url: string }
+  | { type: 'SET_IDENTITY'; author: Author }
+  | { type: 'LOAD_COMMENTS'; comments: Comment[] }
+  | { type: 'ADD_COMMENT'; comment: Comment }
+  | { type: 'UPDATE_COMMENT'; comment: Comment }
+  | { type: 'TOGGLE_COMMENT_MODE' };
+
+function reducer(state: State, action: Action): State {
+  switch (action.type) {
+    case 'SET_URL':
+      return { ...state, previewUrl: action.url };
+    case 'SET_IDENTITY':
+      return { ...state, identity: action.author };
+    case 'LOAD_COMMENTS':
+      return { ...state, comments: action.comments };
+    case 'ADD_COMMENT':
+      return { ...state, comments: [...state.comments, action.comment], commentMode: false };
+    case 'UPDATE_COMMENT':
+      return {
+        ...state,
+        comments: state.comments.map((c) => c.id === action.comment.id ? action.comment : c),
+      };
+    case 'TOGGLE_COMMENT_MODE':
+      return { ...state, commentMode: !state.commentMode };
+    default:
+      return state;
+  }
+}
+
+const initialState: State = {
+  previewUrl: '',
+  comments: [],
+  identity: null,
+  commentMode: false,
+};
+
+export function App(): React.ReactElement {
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const isMounted = useRef(false);
+
+  useEffect(() => {
+    if (isMounted.current) return;
+    isMounted.current = true;
+
+    // Tell the extension we're ready
+    vscodeApi.postMessage({ type: 'ready' });
+
+    // Listen for messages from the extension host
+    const handler = (event: MessageEvent) => {
+      const message = event.data as ExtensionMessage;
+      switch (message.type) {
+        case 'identity':
+          dispatch({ type: 'SET_IDENTITY', author: message.author });
+          break;
+        case 'loadComments':
+          dispatch({ type: 'LOAD_COMMENTS', comments: message.comments });
+          break;
+        case 'commentAdded':
+          dispatch({ type: 'ADD_COMMENT', comment: message.comment });
+          break;
+        case 'commentUpdated':
+          dispatch({ type: 'UPDATE_COMMENT', comment: message.comment });
+          break;
+      }
+    };
+
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
+  return (
+    <div className="flex flex-col h-screen overflow-hidden">
+      <Toolbar
+        previewUrl={state.previewUrl}
+        commentMode={state.commentMode}
+        identity={state.identity}
+        onUrlChange={(url) => dispatch({ type: 'SET_URL', url })}
+        onToggleCommentMode={() => dispatch({ type: 'TOGGLE_COMMENT_MODE' })}
+      />
+      <PreviewFrame
+        url={state.previewUrl}
+        comments={state.comments}
+        commentMode={state.commentMode}
+        onCommentModeExit={() => dispatch({ type: 'TOGGLE_COMMENT_MODE' })}
+      />
+    </div>
+  );
+}

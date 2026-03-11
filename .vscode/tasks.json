@@ -1,0 +1,37 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build Extension",
+      "type": "shell",
+      "command": "npm run compile",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$tsc"],
+      "presentation": {
+        "reveal": "silent"
+      }
+    },
+    {
+      "label": "Watch Extension",
+      "type": "shell",
+      "command": "npm run watch:ext",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "esbuild",
+        "pattern": {
+          "regexp": ".",
+          "file": 1,
+          "line": 1
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^Watching",
+          "endsPattern": "^Build complete"
+        }
+      }
+    }
+  ]
+}
