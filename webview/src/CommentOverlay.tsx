@@ -11,16 +11,12 @@ interface DraftPin {
 interface CommentOverlayProps {
   comments: Comment[];
   commentMode: boolean;
-  containerWidth: number;
-  containerHeight: number;
   onPinClick: (x: number, y: number) => void;
 }
 
 export function CommentOverlay({
   comments,
   commentMode,
-  containerWidth,
-  containerHeight,
   onPinClick,
 }: CommentOverlayProps): React.ReactElement {
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
@@ -30,7 +26,6 @@ export function CommentOverlay({
   const handleOverlayClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       if (!commentMode) return;
-      if (containerWidth === 0 || containerHeight === 0) return;
 
       const rect = e.currentTarget.getBoundingClientRect();
       const x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -40,7 +35,7 @@ export function CommentOverlay({
       setDraftBody('');
       onPinClick(x, y);
     },
-    [commentMode, containerWidth, containerHeight, onPinClick],
+    [commentMode, onPinClick],
   );
 
   const submitDraft = useCallback(() => {

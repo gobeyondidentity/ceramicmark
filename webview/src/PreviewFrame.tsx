@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { CommentOverlay } from './CommentOverlay.js';
 import type { Comment } from './types.js';
 
@@ -16,20 +16,6 @@ export function PreviewFrame({
   onCommentModeExit,
 }: PreviewFrameProps): React.ReactElement {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-
-  // Track container size for accurate pin percentage calculations
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-
-    const observer = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect;
-      setContainerSize({ width, height });
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
 
   // Exit comment mode on Escape
   useEffect(() => {
@@ -78,8 +64,6 @@ export function PreviewFrame({
       <CommentOverlay
         comments={comments}
         commentMode={commentMode}
-        containerWidth={containerSize.width}
-        containerHeight={containerSize.height}
         onPinClick={handleOverlayClick}
       />
 
