@@ -117,7 +117,10 @@ export function CommentOverlay({
       ))}
 
       {/* Draft pin — shown while typing a new comment */}
-      {draftPin && (
+      {draftPin && (() => {
+        const flipX = containerSize.width > 0 && (draftPin.x / 100) * containerSize.width + 256 > containerSize.width;
+        const flipY = containerSize.height > 0 && (draftPin.y / 100) * containerSize.height + 360 > containerSize.height;
+        return (
         <div
           className="absolute"
           style={{
@@ -135,8 +138,10 @@ export function CommentOverlay({
           <div
             className="absolute z-50 w-64 rounded-lg shadow-xl p-3 flex flex-col gap-2"
             style={{
-              top: '28px',
-              left: '0',
+              top: flipY ? 'auto' : '28px',
+              bottom: flipY ? '28px' : 'auto',
+              left: flipX ? 'auto' : '0',
+              right: flipX ? '0' : 'auto',
               background: 'var(--vscode-editorWidget-background, #252526)',
               border: '1px solid var(--vscode-panel-border, #454545)',
             }}
@@ -184,7 +189,8 @@ export function CommentOverlay({
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
@@ -258,11 +264,24 @@ function CommentPin({ comment, isActive, isFocused, isUnread, isOffBranch, membe
       </div>
 
       {/* Thread popover */}
-      {isActive && (
-        <div onClick={(e) => e.stopPropagation()}>
-          <CommentThread comment={comment} memberNames={memberNames} onClose={onActivate} />
-        </div>
-      )}
+      {isActive && (() => {
+        const flipX = containerSize.width > 0 && (comment.position.x / 100) * containerSize.width + 288 > containerSize.width;
+        const flipY = containerSize.height > 0 && (comment.position.y / 100) * containerSize.height + 360 > containerSize.height;
+        return (
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'absolute',
+              top: flipY ? 'auto' : '28px',
+              bottom: flipY ? '28px' : 'auto',
+              left: flipX ? 'auto' : '0',
+              right: flipX ? '0' : 'auto',
+            }}
+          >
+            <CommentThread comment={comment} memberNames={memberNames} onClose={onActivate} />
+          </div>
+        );
+      })()}
     </div>
   );
 }

@@ -30,10 +30,8 @@ export function CommentThread({ comment, memberNames, onClose }: CommentThreadPr
 
   return (
     <div
-      className="absolute z-50 w-72 rounded-lg shadow-2xl flex flex-col"
+      className="z-50 w-72 rounded-lg shadow-2xl flex flex-col"
       style={{
-        top: '28px',
-        left: '0',
         maxHeight: '320px',
         background: 'var(--vscode-editorWidget-background, #252526)',
         border: '1px solid var(--vscode-panel-border, #454545)',
