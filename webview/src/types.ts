@@ -59,4 +59,5 @@ export type WebviewMessage =
   | { type: 'addReply'; commentId: string; body: string; mentions?: string[] }
   | { type: 'resolveComment'; commentId: string }
   | { type: 'reopenComment'; commentId: string }
+  | { type: 'deleteComment'; commentId: string }
   | { type: 'requestComments' };

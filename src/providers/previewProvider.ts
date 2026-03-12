@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fs from 'fs/promises';
 import { randomUUID } from 'crypto';
 import type { ICommentStore } from '../store/ICommentStore.js';
 import type { MemberStore } from '../store/memberStore.js';
@@ -67,7 +68,11 @@ export class PreviewProvider {
 
       case 'addComment': {
         const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-        const [author, branch] = await Promise.all([getGitIdentity(), getGitBranch(cwd)]);
+        const [author, branch, existing] = await Promise.all([
+          getGitIdentity(),
+          getGitBranch(cwd),
+          this.store.getAll(),
+        ]);
         const comment: Comment = {
           id: randomUUID(),
           createdAt: new Date().toISOString(),
@@ -83,6 +88,9 @@ export class PreviewProvider {
         await this.store.add(comment);
         this.postMessage({ type: 'commentAdded', comment });
         this.onCommentChangedEmitter.fire();
+        if (existing.length === 0) {
+          await this.promptGitignore(cwd);
+        }
         break;
       }
 
@@ -116,6 +124,38 @@ export class PreviewProvider {
         this.onCommentChangedEmitter.fire();
         break;
       }
+
+      case 'deleteComment': {
+        await this.deleteComment(message.commentId);
+        break;
+      }
+    }
+  }
+
+  private async promptGitignore(cwd: string | undefined): Promise<void> {
+    if (!cwd) return;
+    if (this.context.workspaceState.get<boolean>('gitignorePrompted')) return;
+    await this.context.workspaceState.update('gitignorePrompted', true);
+
+    const gitignorePath = path.join(cwd, '.gitignore');
+    let contents = '';
+    try {
+      contents = await fs.readFile(gitignorePath, 'utf8');
+    } catch {
+      // file doesn't exist yet
+    }
+
+    if (contents.includes('.ide-comments')) return;
+
+    const choice = await vscode.window.showInformationMessage(
+      'Comments are saved to .ide-comments/comments.json. Add it to .gitignore to keep comments local?',
+      'Add to .gitignore',
+      'Keep in repo',
+    );
+
+    if (choice === 'Add to .gitignore') {
+      const entry = '\n# CeramicMark\n.ide-comments/\n';
+      await fs.writeFile(gitignorePath, contents + entry, 'utf8');
     }
   }
 
