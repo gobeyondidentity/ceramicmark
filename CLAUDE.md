@@ -42,11 +42,29 @@ npm run watch:webview  # watch webview only (Vite dev server)
 
 Launch for development: `Fn+F5` in VS Code opens an Extension Development Host.
 
+## Design instructions
+
+### Primary color
+- The primary color is `#FF6F00` (orange).
+- Use it for: active/selected states, input borders, button backgrounds, branch row background, pin markers, comment mode border, and any accent that needs to draw attention.
+- Never introduce a second accent color. Use `#FF6F00` at reduced opacity (e.g. `rgba(255,111,0,0.4)`) for subtle variants.
+- For text on top of `#FF6F00` backgrounds, use `var(--vscode-titleBar-activeBackground, #3c3c3c)` (dark) to ensure contrast.
+- For all other colors, use `var(--vscode-*)` CSS variables so the UI respects the user's VS Code theme.
+
+### Icons
+- Always use Bootstrap Icons for any new icon.
+- The webview CSP blocks external resources — never link to a CDN. Inline the Bootstrap Icon SVG directly in JSX.
+- Use `fill="currentColor"` (or `fill={currentColor}`) so icons inherit their parent's text color.
+- Standard icon size is `width="12" height="12"` for toolbar/header contexts and `width="14" height="14"` for larger UI areas.
+- Browse available icons at: https://icons.getbootstrap.com
+
+### Font
+- Always use `var(--vscode-editor-font-family, 'SF Mono', Consolas, 'Cascadia Code', Menlo, monospace)` — this is already set globally in `webview/src/index.css` and inherited everywhere.
+- Do not set a custom `font-family` on individual elements. Do not introduce any other font.
+
 ## Key conventions
 
 - **Types must stay in sync**: `src/types.ts` is the source of truth. `webview/src/types.ts` is a manual mirror — update both when adding message types.
-- **Primary color**: `#FF6F00` (orange). Used for active states, borders, branch row background.
-- **Font**: `var(--vscode-editor-font-family)` — inherits user's configured monospace font.
 - **VS Code CSS variables**: Use `var(--vscode-*)` for all theme-sensitive colors. Hardcode only `#FF6F00` and white/black.
 - **Comment storage**: `.ide-comments/comments.json` — `{ version: 1, comments: [...] }`. Never break this schema; additions must be backward-compatible (optional fields only).
 - **No external network calls**: The extension must work fully offline. No CDN fonts, no analytics, no remote URLs.
