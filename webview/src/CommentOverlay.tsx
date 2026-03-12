@@ -98,7 +98,7 @@ export function CommentOverlay({
   return (
     <div
       className="absolute inset-0"
-      style={{ cursor: commentMode ? 'crosshair' : 'default', pointerEvents: 'auto' }}
+      style={{ cursor: commentMode ? 'crosshair' : 'default', pointerEvents: commentMode ? 'auto' : 'none' }}
       onClick={handleOverlayClick}
     >
       {/* Existing comment pins */}
@@ -218,6 +218,7 @@ function CommentPin({ comment, isActive, isFocused, isUnread, isOffBranch, membe
         transform: 'translate(-50%, -50%)',
         zIndex: isActive ? 50 : 10,
         opacity: isOffBranch ? 0.4 : 1,
+        pointerEvents: 'auto',
       }}
       onClick={(e) => {
         e.stopPropagation();
