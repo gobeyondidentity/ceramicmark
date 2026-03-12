@@ -19,6 +19,37 @@ Comments are stored in `.ide-comments/comments.json` inside your project — the
 
 ---
 
+## Dev setup (running from source)
+
+Use this if CeramicMark isn't on the marketplace yet and you need to run it locally.
+
+**Requirements:** Node.js, VS Code
+
+1. Clone the repo and open it in VS Code:
+   ```bash
+   git clone https://github.com/ceramicmark/ceramic-mark
+   cd ceramic-mark
+   code .
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   cd webview && npm install && cd ..
+   ```
+
+3. Launch the extension: **Run → Start Debugging** (or `Fn+F5` on Mac)
+
+4. A new **Extension Development Host** window opens — this is where CeramicMark is active
+
+5. In that new window, open the project you want to use CeramicMark on: **File → Open Folder**
+
+6. Start your dev server for that project (e.g. `npm run dev`)
+
+7. Click the CeramicMark icon in the activity bar (left sidebar) and enter your localhost URL
+
+---
+
 ## Comment privacy
 
 Comments are stored as a file inside your project folder. This means:

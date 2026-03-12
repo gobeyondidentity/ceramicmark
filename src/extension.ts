@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { FileStore } from './store/fileStore.js';
 import { PreviewProvider } from './providers/previewProvider.js';
-import { CommentTreeProvider } from './providers/commentTreeProvider.js';
+import { CommentTreeProvider, CommentItem } from './providers/commentTreeProvider.js';
 
 export function activate(context: vscode.ExtensionContext): void {
   const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
@@ -41,7 +41,33 @@ export function activate(context: vscode.ExtensionContext): void {
       previewProvider.open();
     }),
 
-    vscode.window.registerTreeDataProvider('ceramicMark.comments', treeProvider),
+    vscode.commands.registerCommand('ceramicMark.focusPin', (commentId: string) => {
+      previewProvider.focusPin(commentId);
+    }),
+
+    vscode.commands.registerCommand('ceramicMark.resolveComment', (item: CommentItem) => {
+      previewProvider.resolveComment(item.comment.id);
+    }),
+
+    vscode.commands.registerCommand('ceramicMark.reopenComment', (item: CommentItem) => {
+      previewProvider.reopenComment(item.comment.id);
+    }),
+
+    vscode.commands.registerCommand('ceramicMark.deleteComment', (item: CommentItem) => {
+      previewProvider.deleteComment(item.comment.id);
+    }),
+
+    (() => {
+      const treeView = vscode.window.createTreeView('ceramicMark.comments', {
+        treeDataProvider: treeProvider,
+      });
+      treeView.onDidChangeVisibility((e) => {
+        if (e.visible) {
+          previewProvider.open();
+        }
+      });
+      return treeView;
+    })(),
 
     watcher,
   );

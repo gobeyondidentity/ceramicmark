@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { vscodeApi } from './vscode.js';
 import { CommentThread } from './CommentThread.js';
 import type { Comment, Position } from './types.js';
@@ -12,18 +12,29 @@ interface CommentOverlayProps {
   comments: Comment[];
   commentMode: boolean;
   pinsVisible: boolean;
+  focusedPinId: string | null;
   onPinClick: (x: number, y: number) => void;
+  onClearFocus: () => void;
 }
 
 export function CommentOverlay({
   comments,
   commentMode,
   pinsVisible,
+  focusedPinId,
   onPinClick,
+  onClearFocus,
 }: CommentOverlayProps): React.ReactElement {
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
   const [draftPin, setDraftPin] = useState<DraftPin | null>(null);
   const [draftBody, setDraftBody] = useState('');
+
+  // When a pin is focused from the sidebar, auto-open its thread
+  useEffect(() => {
+    if (focusedPinId) {
+      setActiveCommentId(focusedPinId);
+    }
+  }, [focusedPinId]);
 
   const handleOverlayClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -53,6 +64,12 @@ export function CommentOverlay({
     setDraftBody('');
   }, []);
 
+  const handleActivate = useCallback((id: string) => {
+    const next = activeCommentId === id ? null : id;
+    setActiveCommentId(next);
+    if (!next) onClearFocus();
+  }, [activeCommentId, onClearFocus]);
+
   return (
     <div
       className="absolute inset-0"
@@ -65,7 +82,8 @@ export function CommentOverlay({
           key={comment.id}
           comment={comment}
           isActive={activeCommentId === comment.id}
-          onActivate={() => setActiveCommentId(activeCommentId === comment.id ? null : comment.id)}
+          isFocused={focusedPinId === comment.id}
+          onActivate={() => handleActivate(comment.id)}
         />
       ))}
 
@@ -76,13 +94,11 @@ export function CommentOverlay({
           style={{ left: `${draftPin.x}%`, top: `${draftPin.y}%`, transform: 'translate(-50%, -50%)' }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Pin marker */}
           <div className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold shadow-lg"
             style={{ background: 'var(--vscode-button-background, #0e639c)', color: '#fff' }}>
             +
           </div>
 
-          {/* Draft input popover */}
           <div
             className="absolute z-50 w-64 rounded-lg shadow-xl p-3 flex flex-col gap-2"
             style={{
@@ -142,10 +158,11 @@ export function CommentOverlay({
 interface CommentPinProps {
   comment: Comment;
   isActive: boolean;
+  isFocused: boolean;
   onActivate: () => void;
 }
 
-function CommentPin({ comment, isActive, onActivate }: CommentPinProps): React.ReactElement {
+function CommentPin({ comment, isActive, isFocused, onActivate }: CommentPinProps): React.ReactElement {
   const isResolved = comment.status === 'resolved';
 
   return (
@@ -162,11 +179,27 @@ function CommentPin({ comment, isActive, onActivate }: CommentPinProps): React.R
         onActivate();
       }}
     >
+      {/* Pulse ring when focused from sidebar */}
+      {isFocused && (
+        <div
+          className="absolute rounded-full animate-ping"
+          style={{
+            width: '32px',
+            height: '32px',
+            top: '-4px',
+            left: '-4px',
+            background: 'var(--vscode-button-background, #0e639c)',
+            opacity: 0.4,
+          }}
+        />
+      )}
+
       {/* Pin marker */}
       <div
-        className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center cursor-pointer shadow-md transition-transform hover:scale-110"
+        className="w-6 h-6 rounded-full border-2 flex items-center justify-center cursor-pointer shadow-md transition-transform hover:scale-110"
         style={{
           background: isResolved ? '#22c55e' : 'var(--vscode-button-background, #0e639c)',
+          borderColor: isFocused ? '#fff' : 'rgba(255,255,255,0.6)',
           color: '#fff',
           opacity: isResolved ? 0.7 : 1,
         }}

@@ -43,6 +43,11 @@ export class FileStore implements ICommentStore {
     await this.write(comments);
   }
 
+  async delete(id: string): Promise<void> {
+    const comments = await this.getAll();
+    await this.write(comments.filter((c) => c.id !== id));
+  }
+
   private async write(comments: Comment[]): Promise<void> {
     await fs.mkdir(path.dirname(this.filePath), { recursive: true });
     const data: CommentsFile = { version: 1, comments };

@@ -48,6 +48,8 @@ export type ExtensionMessage =
   | { type: 'loadComments'; comments: Comment[] }
   | { type: 'commentAdded'; comment: Comment }
   | { type: 'commentUpdated'; comment: Comment }
+  | { type: 'commentDeleted'; commentId: string }
+  | { type: 'focusPin'; commentId: string }
   | { type: 'identity'; author: Author };
 
 // Messages sent from the webview → extension host

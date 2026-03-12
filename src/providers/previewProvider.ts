@@ -35,6 +35,7 @@ export class PreviewProvider {
       },
     );
 
+    this.panel.iconPath = vscode.Uri.joinPath(this.context.extensionUri, 'images', 'cm_icon.svg');
     this.panel.webview.html = this.getHtml(this.panel.webview);
 
     this.panel.webview.onDidReceiveMessage(
@@ -123,6 +124,44 @@ export class PreviewProvider {
 
   private postMessage(message: ExtensionMessage): void {
     this.panel?.webview.postMessage(message);
+  }
+
+  public focusPin(commentId: string): void {
+    this.open();
+    // Small delay to allow the panel to mount before sending the message
+    setTimeout(() => this.postMessage({ type: 'focusPin', commentId }), 300);
+  }
+
+  public async resolveComment(commentId: string): Promise<void> {
+    const comments = await this.store.getAll();
+    const target = comments.find((c) => c.id === commentId);
+    if (!target) return;
+    target.status = 'resolved';
+    await this.store.update(target);
+    this.postMessage({ type: 'commentUpdated', comment: target });
+    this.onCommentChangedEmitter.fire();
+  }
+
+  public async reopenComment(commentId: string): Promise<void> {
+    const comments = await this.store.getAll();
+    const target = comments.find((c) => c.id === commentId);
+    if (!target) return;
+    target.status = 'open';
+    await this.store.update(target);
+    this.postMessage({ type: 'commentUpdated', comment: target });
+    this.onCommentChangedEmitter.fire();
+  }
+
+  public async deleteComment(commentId: string): Promise<void> {
+    const confirmed = await vscode.window.showWarningMessage(
+      'Delete this comment?',
+      { modal: true },
+      'Delete',
+    );
+    if (confirmed !== 'Delete') return;
+    await this.store.delete(commentId);
+    this.postMessage({ type: 'commentDeleted', commentId });
+    this.onCommentChangedEmitter.fire();
   }
 
   /** Refresh comment pins after an external file change */

@@ -27,6 +27,21 @@
         "title": "Open Design Preview",
         "category": "CeramicMark",
         "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "ceramicMark.resolveComment",
+        "title": "Resolve",
+        "category": "CeramicMark"
+      },
+      {
+        "command": "ceramicMark.reopenComment",
+        "title": "Reopen",
+        "category": "CeramicMark"
+      },
+      {
+        "command": "ceramicMark.deleteComment",
+        "title": "Delete",
+        "category": "CeramicMark"
       }
     ],
     "viewsContainers": {
@@ -53,6 +68,23 @@
           "command": "ceramicMark.openPreview",
           "when": "view == ceramicMark.comments",
           "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "ceramicMark.resolveComment",
+          "when": "view == ceramicMark.comments && viewItem == openComment",
+          "group": "1_actions@1"
+        },
+        {
+          "command": "ceramicMark.reopenComment",
+          "when": "view == ceramicMark.comments && viewItem == resolvedComment",
+          "group": "1_actions@1"
+        },
+        {
+          "command": "ceramicMark.deleteComment",
+          "when": "view == ceramicMark.comments",
+          "group": "2_danger@1"
         }
       ]
     }

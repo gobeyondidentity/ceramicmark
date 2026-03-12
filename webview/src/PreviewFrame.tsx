@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef } from 'react';
+import logoSvg from './ceramicmark_logo.svg?raw';
 import { CommentOverlay } from './CommentOverlay.js';
 import type { Comment } from './types.js';
 
@@ -7,7 +8,9 @@ interface PreviewFrameProps {
   comments: Comment[];
   commentMode: boolean;
   pinsVisible: boolean;
+  focusedPinId: string | null;
   onCommentModeExit: () => void;
+  onClearFocus: () => void;
 }
 
 export function PreviewFrame({
@@ -15,7 +18,9 @@ export function PreviewFrame({
   comments,
   commentMode,
   pinsVisible,
+  focusedPinId,
   onCommentModeExit,
+  onClearFocus,
 }: PreviewFrameProps): React.ReactElement {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -30,23 +35,20 @@ export function PreviewFrame({
   }, [commentMode, onCommentModeExit]);
 
   const handleOverlayClick = useCallback(
-    (x: number, y: number) => {
+    (_x: number, _y: number) => {
       if (!commentMode) return;
-      // x, y are already percentages from CommentOverlay
-      // The draft comment dialog is shown by the overlay
     },
     [commentMode],
   );
 
   if (!url) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-3 opacity-50">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-          <rect x="3" y="3" width="18" height="14" rx="2" />
-          <path d="M8 21h8M12 17v4" />
-        </svg>
-        <p className="text-sm">Enter a localhost URL above to load your app preview</p>
-        <p className="text-xs opacity-60">Then click "Comment" to start leaving pins</p>
+      <div className="flex flex-1 flex-col items-center justify-center gap-4">
+        <div
+          style={{ width: '180px', filter: 'brightness(0) invert(1)', opacity: 0.25 }}
+          dangerouslySetInnerHTML={{ __html: logoSvg.replace(/<svg /, '<svg width="180" height="auto" ') }}
+        />
+        <p className="text-xs opacity-40">Enter a localhost URL above and press Enter</p>
       </div>
     );
   }
@@ -67,7 +69,9 @@ export function PreviewFrame({
         comments={comments}
         commentMode={commentMode}
         pinsVisible={pinsVisible}
+        focusedPinId={focusedPinId}
         onPinClick={handleOverlayClick}
+        onClearFocus={onClearFocus}
       />
 
       {/* Comment mode cursor hint */}

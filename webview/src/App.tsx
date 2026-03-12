@@ -10,6 +10,7 @@ interface State {
   identity: Author | null;
   commentMode: boolean;
   pinsVisible: boolean;
+  focusedPinId: string | null;
 }
 
 type Action =
@@ -18,8 +19,10 @@ type Action =
   | { type: 'LOAD_COMMENTS'; comments: Comment[] }
   | { type: 'ADD_COMMENT'; comment: Comment }
   | { type: 'UPDATE_COMMENT'; comment: Comment }
+  | { type: 'DELETE_COMMENT'; commentId: string }
   | { type: 'TOGGLE_COMMENT_MODE' }
-  | { type: 'TOGGLE_PINS_VISIBLE' };
+  | { type: 'TOGGLE_PINS_VISIBLE' }
+  | { type: 'FOCUS_PIN'; commentId: string };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -36,10 +39,14 @@ function reducer(state: State, action: Action): State {
         ...state,
         comments: state.comments.map((c) => c.id === action.comment.id ? action.comment : c),
       };
+    case 'DELETE_COMMENT':
+      return { ...state, comments: state.comments.filter((c) => c.id !== action.commentId) };
     case 'TOGGLE_COMMENT_MODE':
       return { ...state, commentMode: !state.commentMode };
     case 'TOGGLE_PINS_VISIBLE':
       return { ...state, pinsVisible: !state.pinsVisible };
+    case 'FOCUS_PIN':
+      return { ...state, focusedPinId: action.commentId, pinsVisible: true };
     default:
       return state;
   }
@@ -51,6 +58,7 @@ const initialState: State = {
   identity: null,
   commentMode: false,
   pinsVisible: true,
+  focusedPinId: null,
 };
 
 export function App(): React.ReactElement {
@@ -61,10 +69,8 @@ export function App(): React.ReactElement {
     if (isMounted.current) return;
     isMounted.current = true;
 
-    // Tell the extension we're ready
     vscodeApi.postMessage({ type: 'ready' });
 
-    // Listen for messages from the extension host
     const handler = (event: MessageEvent) => {
       const message = event.data as ExtensionMessage;
       switch (message.type) {
@@ -79,6 +85,12 @@ export function App(): React.ReactElement {
           break;
         case 'commentUpdated':
           dispatch({ type: 'UPDATE_COMMENT', comment: message.comment });
+          break;
+        case 'commentDeleted':
+          dispatch({ type: 'DELETE_COMMENT', commentId: message.commentId });
+          break;
+        case 'focusPin':
+          dispatch({ type: 'FOCUS_PIN', commentId: message.commentId });
           break;
       }
     };
@@ -103,7 +115,9 @@ export function App(): React.ReactElement {
         comments={state.comments}
         commentMode={state.commentMode}
         pinsVisible={state.pinsVisible}
+        focusedPinId={state.focusedPinId}
         onCommentModeExit={() => dispatch({ type: 'TOGGLE_COMMENT_MODE' })}
+        onClearFocus={() => dispatch({ type: 'FOCUS_PIN', commentId: '' })}
       />
     </div>
   );

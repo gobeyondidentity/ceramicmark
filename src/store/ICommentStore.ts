@@ -14,4 +14,7 @@ export interface ICommentStore {
 
   /** Update an existing comment (replies, status changes) */
   update(comment: Comment): Promise<void>;
+
+  /** Delete a comment by id */
+  delete(id: string): Promise<void>;
 }
