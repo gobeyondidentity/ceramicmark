@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import logoSvg from './ceramicmark_logo.svg?raw';
 import { CommentOverlay } from './CommentOverlay.js';
 import type { Comment } from './types.js';
@@ -25,6 +25,18 @@ export function PreviewFrame({
   onClearFocus,
 }: PreviewFrameProps): React.ReactElement {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+
+  // Track container dimensions so pins reposition correctly on panel resize
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ro = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      setContainerSize({ width, height });
+    });
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, []);
 
   // Exit comment mode on Escape
   useEffect(() => {
@@ -73,6 +85,7 @@ export function PreviewFrame({
         pinsVisible={pinsVisible}
         focusedPinId={focusedPinId}
         memberNames={memberNames}
+        containerSize={containerSize}
         onPinClick={handleOverlayClick}
         onClearFocus={onClearFocus}
       />

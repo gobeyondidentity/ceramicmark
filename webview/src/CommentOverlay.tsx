@@ -10,14 +10,25 @@ interface DraftPin {
   y: number;
 }
 
+interface ContainerSize {
+  width: number;
+  height: number;
+}
+
 interface CommentOverlayProps {
   comments: Comment[];
   commentMode: boolean;
   pinsVisible: boolean;
   focusedPinId: string | null;
   memberNames: string[];
+  containerSize: ContainerSize;
   onPinClick: (x: number, y: number) => void;
   onClearFocus: () => void;
+}
+
+/** Convert a stored percentage (0–100) to a pixel value, falling back to % if not yet measured. */
+function toPixel(pct: number, dimension: number): string {
+  return dimension > 0 ? `${(pct / 100) * dimension}px` : `${pct}%`;
 }
 
 export function CommentOverlay({
@@ -26,6 +37,7 @@ export function CommentOverlay({
   pinsVisible,
   focusedPinId,
   memberNames,
+  containerSize,
   onPinClick,
   onClearFocus,
 }: CommentOverlayProps): React.ReactElement {
@@ -89,6 +101,7 @@ export function CommentOverlay({
           isActive={activeCommentId === comment.id}
           isFocused={focusedPinId === comment.id}
           memberNames={memberNames}
+          containerSize={containerSize}
           onActivate={() => handleActivate(comment.id)}
         />
       ))}
@@ -97,7 +110,11 @@ export function CommentOverlay({
       {draftPin && (
         <div
           className="absolute"
-          style={{ left: `${draftPin.x}%`, top: `${draftPin.y}%`, transform: 'translate(-50%, -50%)' }}
+          style={{
+            left: toPixel(draftPin.x, containerSize.width),
+            top: toPixel(draftPin.y, containerSize.height),
+            transform: 'translate(-50%, -50%)',
+          }}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold shadow-lg"
@@ -167,18 +184,19 @@ interface CommentPinProps {
   isActive: boolean;
   isFocused: boolean;
   memberNames: string[];
+  containerSize: ContainerSize;
   onActivate: () => void;
 }
 
-function CommentPin({ comment, isActive, isFocused, memberNames, onActivate }: CommentPinProps): React.ReactElement {
+function CommentPin({ comment, isActive, isFocused, memberNames, containerSize, onActivate }: CommentPinProps): React.ReactElement {
   const isResolved = comment.status === 'resolved';
 
   return (
     <div
       className="absolute"
       style={{
-        left: `${comment.position.x}%`,
-        top: `${comment.position.y}%`,
+        left: toPixel(comment.position.x, containerSize.width),
+        top: toPixel(comment.position.y, containerSize.height),
         transform: 'translate(-50%, -50%)',
         zIndex: isActive ? 50 : 10,
       }}
