@@ -49,7 +49,8 @@ export function Toolbar({
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          placeholder="http://localhost:3000 · press Enter"
+          onFocus={() => { if (!inputValue) setInputValue('http://localhost:'); }}
+          placeholder="Enter Dev Server: ex http://localhost:3000 | Press Enter"
           className="flex-1 px-2 py-1 text-xs rounded min-w-0 outline-none placeholder-[#FF6F00]"
           style={{
             background: 'transparent',

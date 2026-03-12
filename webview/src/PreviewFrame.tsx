@@ -56,13 +56,17 @@ export function PreviewFrame({
   );
 
   if (!url) {
+    const bgUri = document.querySelector<HTMLMetaElement>('meta[name="cm-bg"]')?.content;
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-4">
+      <div
+        className="flex flex-1 flex-col items-center justify-center gap-4"
+        style={bgUri ? { backgroundImage: `url(${bgUri})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+      >
         <div
-          style={{ width: '225px', filter: 'brightness(0) saturate(100%) invert(42%) sepia(99%) saturate(1200%) hue-rotate(2deg) brightness(103%)' }}
-          dangerouslySetInnerHTML={{ __html: logoSvg.replace(/<svg /, '<svg width="225" height="auto" ') }}
+          style={{ width: '282px', filter: 'brightness(0) invert(1)' }}
+          dangerouslySetInnerHTML={{ __html: logoSvg.replace(/<svg /, '<svg width="282" height="auto" ') }}
         />
-        <p className="text-xs opacity-40">Enter a localhost URL above and press Enter</p>
+        <p className="text-xs" style={{ color: '#fff' }}>Enter a localhost URL above and press Enter</p>
       </div>
     );
   }

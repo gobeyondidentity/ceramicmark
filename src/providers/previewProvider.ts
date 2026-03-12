@@ -33,6 +33,7 @@ export class PreviewProvider {
         retainContextWhenHidden: true,
         localResourceRoots: [
           vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview'),
+          vscode.Uri.joinPath(this.context.extensionUri, 'images'),
         ],
       },
     );
@@ -184,6 +185,9 @@ export class PreviewProvider {
     const styleUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview', 'index.css'),
     );
+    const bgUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this.context.extensionUri, 'images', 'cm_bg.png'),
+    );
     const nonce = randomUUID().replace(/-/g, '');
 
     return /* html */ `<!DOCTYPE html>
@@ -197,6 +201,7 @@ export class PreviewProvider {
              frame-src *;
              img-src ${webview.cspSource} https: data:;" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="cm-bg" content="${bgUri}" />
   <link rel="stylesheet" href="${styleUri}" />
   <title>CeramicMark</title>
 </head>
