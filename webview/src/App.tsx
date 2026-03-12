@@ -115,7 +115,6 @@ export function App(): React.ReactElement {
         previewUrl={state.previewUrl}
         commentMode={state.commentMode}
         pinsVisible={state.pinsVisible}
-        identity={state.identity}
         onUrlChange={(url) => dispatch({ type: 'SET_URL', url })}
         onToggleCommentMode={() => dispatch({ type: 'TOGGLE_COMMENT_MODE' })}
         onTogglePinsVisible={() => dispatch({ type: 'TOGGLE_PINS_VISIBLE' })}

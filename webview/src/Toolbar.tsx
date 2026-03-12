@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import logoSvg from './ceramicmark_logo.svg?raw';
-import type { Author } from './types.js';
 
 interface ToolbarProps {
   previewUrl: string;
   commentMode: boolean;
   pinsVisible: boolean;
-  identity: Author | null;
   onUrlChange: (url: string) => void;
   onToggleCommentMode: () => void;
   onTogglePinsVisible: () => void;
@@ -16,7 +14,6 @@ export function Toolbar({
   previewUrl,
   commentMode,
   pinsVisible,
-  identity,
   onUrlChange,
   onToggleCommentMode,
   onTogglePinsVisible,
@@ -53,10 +50,10 @@ export function Toolbar({
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           placeholder="http://localhost:3000 · press Enter"
-          className="flex-1 px-2 py-1 text-xs rounded min-w-0 outline-none"
+          className="flex-1 px-2 py-1 text-xs rounded min-w-0 outline-none placeholder-[#FF6F00]"
           style={{
             background: 'var(--vscode-input-background, #3c3c3c)',
-            color: 'var(--vscode-input-foreground, #cccccc)',
+            color: '#FF6F00',
             border: '1px solid var(--vscode-input-border, #555)',
           }}
         />
@@ -68,13 +65,10 @@ export function Toolbar({
         title={commentMode ? 'Exit comment mode (Esc)' : 'Add comment (click on preview)'}
         className="flex items-center gap-1 px-2 py-1 text-xs rounded shrink-0 transition-colors"
         style={{
-          background: commentMode
-            ? 'var(--vscode-button-background, #FF6F00)'
-            : 'var(--vscode-button-secondaryBackground, #3a3d41)',
-          color: commentMode
-            ? 'var(--vscode-button-foreground, #fff)'
-            : 'var(--vscode-button-secondaryForeground, #ccc)',
-          border: commentMode ? '1px solid var(--vscode-focusBorder, #007fd4)' : '1px solid transparent',
+          background: '#FF6F00',
+          color: '#fff',
+          opacity: commentMode ? 1 : 0.75,
+          border: '1px solid transparent',
         }}
       >
         <span>{commentMode ? '✦' : '+'}</span>
@@ -108,16 +102,6 @@ export function Toolbar({
         )}
       </button>
 
-      {/* Identity badge */}
-      {identity && (
-        <div
-          className="text-xs px-2 py-1 rounded shrink-0 opacity-70"
-          title={identity.email}
-          style={{ background: 'var(--vscode-badge-background, #4d4d4d)', color: 'var(--vscode-badge-foreground, #fff)' }}
-        >
-          {identity.name.split(' ')[0]}
-        </div>
-      )}
     </div>
   );
 }
