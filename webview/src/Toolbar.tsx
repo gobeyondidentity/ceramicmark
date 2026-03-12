@@ -69,7 +69,7 @@ export function Toolbar({
         className="flex items-center gap-1 px-2 py-1 text-xs rounded shrink-0 transition-colors"
         style={{
           background: commentMode
-            ? 'var(--vscode-button-background, #0e639c)'
+            ? 'var(--vscode-button-background, #FF6F00)'
             : 'var(--vscode-button-secondaryBackground, #3a3d41)',
           color: commentMode
             ? 'var(--vscode-button-foreground, #fff)'

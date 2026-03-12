@@ -120,7 +120,7 @@ export function CommentThread({ comment, memberNames, onClose }: CommentThreadPr
             disabled={!replyBody.trim()}
             className="self-end text-xs px-3 py-1 rounded disabled:opacity-40"
             style={{
-              background: 'var(--vscode-button-background, #0e639c)',
+              background: 'var(--vscode-button-background, #FF6F00)',
               color: 'var(--vscode-button-foreground, #fff)',
             }}
           >
@@ -171,8 +171,8 @@ function MentionBody({ body }: { body: string }): React.ReactElement {
               key={i}
               className="inline-block rounded px-1 text-xs font-medium"
               style={{
-                background: 'rgba(59,130,246,0.2)',
-                color: '#60a5fa',
+                background: 'rgba(255,111,0,0.2)',
+                color: '#FF6F00',
               }}
             >
               {part}

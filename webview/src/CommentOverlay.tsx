@@ -101,7 +101,7 @@ export function CommentOverlay({
           onClick={(e) => e.stopPropagation()}
         >
           <div className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold shadow-lg"
-            style={{ background: 'var(--vscode-button-background, #0e639c)', color: '#fff' }}>
+            style={{ background: 'var(--vscode-button-background, #FF6F00)', color: '#fff' }}>
             +
           </div>
 
@@ -148,7 +148,7 @@ export function CommentOverlay({
                 disabled={!draftBody.trim()}
                 className="text-xs px-2 py-1 rounded disabled:opacity-40"
                 style={{
-                  background: 'var(--vscode-button-background, #0e639c)',
+                  background: 'var(--vscode-button-background, #FF6F00)',
                   color: 'var(--vscode-button-foreground, #fff)',
                 }}
               >
@@ -196,7 +196,7 @@ function CommentPin({ comment, isActive, isFocused, memberNames, onActivate }: C
             height: '32px',
             top: '-4px',
             left: '-4px',
-            background: 'var(--vscode-button-background, #0e639c)',
+            background: 'var(--vscode-button-background, #FF6F00)',
             opacity: 0.4,
           }}
         />
@@ -206,7 +206,7 @@ function CommentPin({ comment, isActive, isFocused, memberNames, onActivate }: C
       <div
         className="w-6 h-6 rounded-full border-2 flex items-center justify-center cursor-pointer shadow-md transition-transform hover:scale-110"
         style={{
-          background: isResolved ? '#22c55e' : 'var(--vscode-button-background, #0e639c)',
+          background: isResolved ? '#22c55e' : 'var(--vscode-button-background, #FF6F00)',
           borderColor: isFocused ? '#fff' : 'rgba(255,255,255,0.6)',
           color: '#fff',
           opacity: isResolved ? 0.7 : 1,

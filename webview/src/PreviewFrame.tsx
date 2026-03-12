@@ -47,8 +47,8 @@ export function PreviewFrame({
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4">
         <div
-          style={{ width: '180px', filter: 'brightness(0) invert(1)', opacity: 0.25 }}
-          dangerouslySetInnerHTML={{ __html: logoSvg.replace(/<svg /, '<svg width="180" height="auto" ') }}
+          style={{ width: '225px', filter: 'brightness(0) saturate(100%) invert(42%) sepia(99%) saturate(1200%) hue-rotate(2deg) brightness(103%)' }}
+          dangerouslySetInnerHTML={{ __html: logoSvg.replace(/<svg /, '<svg width="225" height="auto" ') }}
         />
         <p className="text-xs opacity-40">Enter a localhost URL above and press Enter</p>
       </div>
@@ -82,7 +82,7 @@ export function PreviewFrame({
         <div
           className="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs px-3 py-1.5 rounded-full pointer-events-none"
           style={{
-            background: 'var(--vscode-button-background, #0e639c)',
+            background: 'var(--vscode-button-background, #FF6F00)',
             color: 'var(--vscode-button-foreground, #fff)',
             boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
           }}
