@@ -1,4 +1,5 @@
-import React, { useEffect, useReducer, useRef } from 'react';
+import React, { useEffect, useReducer, useRef, useState } from 'react';
+import logoSvg from './ceramicmark_logo.svg?raw';
 import { vscodeApi } from './vscode.js';
 import { Toolbar } from './Toolbar.js';
 import { PreviewFrame } from './PreviewFrame.js';
@@ -139,6 +140,10 @@ export function App(): React.ReactElement {
 
   const memberNames = state.members.map((m) => m.name);
 
+  if (!state.previewUrl) {
+    return <SplashScreen onUrlChange={(url) => dispatch({ type: 'SET_URL', url })} />;
+  }
+
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       <Toolbar
@@ -163,6 +168,50 @@ export function App(): React.ReactElement {
         onClearFocus={() => dispatch({ type: 'FOCUS_PIN', commentId: '' })}
         onMarkRead={(commentId) => dispatch({ type: 'MARK_READ', commentId })}
       />
+    </div>
+  );
+}
+
+function SplashScreen({ onUrlChange }: { onUrlChange: (url: string) => void }): React.ReactElement {
+  const [inputValue, setInputValue] = useState('');
+  const bgUri = document.querySelector<HTMLMetaElement>('meta[name="cm-bg"]')?.content;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const url = inputValue.trim();
+    if (url) {
+      onUrlChange(url.startsWith('http') ? url : `http://${url}`);
+    }
+  };
+
+  return (
+    <div
+      className="flex flex-1 flex-col items-center justify-center gap-6 h-screen"
+      style={bgUri ? { backgroundImage: `url(${bgUri})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+    >
+      <div
+        style={{ width: '282px', filter: 'brightness(0) invert(1)' }}
+        dangerouslySetInnerHTML={{ __html: logoSvg.replace(/<svg /, '<svg width="282" height="auto" ') }}
+      />
+      <form onSubmit={handleSubmit} className="flex items-center gap-1 w-80">
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onFocus={() => { if (!inputValue) setInputValue('http://localhost:'); }}
+          placeholder="Enter Dev Server: ex http://localhost:3000 | Press Enter"
+          autoFocus
+          className="flex-1 px-2 py-1 text-xs rounded min-w-0 outline-none placeholder-white"
+          style={{
+            background: 'transparent',
+            color: '#fff',
+            border: '1px solid rgba(255,255,255,0.6)',
+          }}
+        />
+      </form>
+      <p className="text-xs text-center w-80" style={{ color: 'rgba(255,255,255,0.6)' }}>
+        An extension that lets product builders leave visual, pin-based comments directly on a live localhost preview — Run a dev server, enter your localhost, Collaborate.
+      </p>
     </div>
   );
 }

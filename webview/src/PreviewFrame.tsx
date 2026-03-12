@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import logoSvg from './ceramicmark_logo.svg?raw';
 import { CommentOverlay } from './CommentOverlay.js';
 import type { Comment } from './types.js';
 
@@ -60,22 +59,6 @@ export function PreviewFrame({
     },
     [commentMode],
   );
-
-  if (!url) {
-    const bgUri = document.querySelector<HTMLMetaElement>('meta[name="cm-bg"]')?.content;
-    return (
-      <div
-        className="flex flex-1 flex-col items-center justify-center gap-4"
-        style={bgUri ? { backgroundImage: `url(${bgUri})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
-      >
-        <div
-          style={{ width: '282px', filter: 'brightness(0) invert(1)' }}
-          dangerouslySetInnerHTML={{ __html: logoSvg.replace(/<svg /, '<svg width="282" height="auto" ') }}
-        />
-        <p className="text-xs" style={{ color: '#fff' }}>Enter a localhost URL above and press Enter</p>
-      </div>
-    );
-  }
 
   return (
     <div ref={containerRef} className="relative flex-1 overflow-hidden">
