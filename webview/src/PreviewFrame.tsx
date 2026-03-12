@@ -11,6 +11,7 @@ interface PreviewFrameProps {
   focusedPinId: string | null;
   memberNames: string[];
   unreadIds: Set<string>;
+  currentBranch: string | null;
   onCommentModeExit: () => void;
   onClearFocus: () => void;
   onMarkRead: (commentId: string) => void;
@@ -24,6 +25,7 @@ export function PreviewFrame({
   focusedPinId,
   memberNames,
   unreadIds,
+  currentBranch,
   onCommentModeExit,
   onClearFocus,
   onMarkRead,
@@ -95,6 +97,7 @@ export function PreviewFrame({
         memberNames={memberNames}
         containerSize={containerSize}
         unreadIds={unreadIds}
+        currentBranch={currentBranch}
         onPinClick={handleOverlayClick}
         onClearFocus={onClearFocus}
         onMarkRead={onMarkRead}

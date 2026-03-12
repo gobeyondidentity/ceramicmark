@@ -27,3 +27,18 @@ export async function getGitIdentity(): Promise<Author> {
 
   return { name: 'Anonymous', email: '' };
 }
+
+/**
+ * Returns the current git branch name.
+ * Falls back to 'unknown' if git isn't available or not in a repo.
+ */
+export async function getGitBranch(cwd?: string): Promise<string> {
+  try {
+    const result = await exec('git', ['rev-parse', '--abbrev-ref', 'HEAD'], cwd ? { cwd } : undefined);
+    const branch = result.stdout.trim();
+    if (branch) return branch;
+  } catch {
+    // git not available or not a git repo
+  }
+  return 'unknown';
+}

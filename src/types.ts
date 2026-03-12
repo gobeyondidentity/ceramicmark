@@ -48,6 +48,7 @@ export interface Comment {
   mentions?: string[];
   replies: Reply[];
   status: 'open' | 'resolved';
+  branch?: string;
 }
 
 export interface CommentsFile {
@@ -63,7 +64,8 @@ export type ExtensionMessage =
   | { type: 'commentDeleted'; commentId: string }
   | { type: 'focusPin'; commentId: string }
   | { type: 'identity'; author: Author }
-  | { type: 'loadMembers'; members: Member[] };
+  | { type: 'loadMembers'; members: Member[] }
+  | { type: 'setBranch'; branch: string };
 
 // Messages sent from the webview → extension host
 export type WebviewMessage =

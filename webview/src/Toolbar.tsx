@@ -5,6 +5,7 @@ interface ToolbarProps {
   previewUrl: string;
   commentMode: boolean;
   pinsVisible: boolean;
+  currentBranch: string | null;
   onUrlChange: (url: string) => void;
   onToggleCommentMode: () => void;
   onTogglePinsVisible: () => void;
@@ -14,6 +15,7 @@ export function Toolbar({
   previewUrl,
   commentMode,
   pinsVisible,
+  currentBranch,
   onUrlChange,
   onToggleCommentMode,
   onTogglePinsVisible,
@@ -30,12 +32,13 @@ export function Toolbar({
 
   return (
     <div
-      className="flex items-center gap-2 px-3 py-2 shrink-0"
+      className="flex flex-col shrink-0"
       style={{
         background: 'var(--vscode-titleBar-activeBackground, #3c3c3c)',
         borderBottom: '1px solid var(--vscode-panel-border, #444)',
       }}
     >
+    <div className="flex items-center gap-2 px-3 py-2">
       {/* Logo */}
       <div
         className="shrink-0"
@@ -103,6 +106,17 @@ export function Toolbar({
         )}
       </button>
 
+    </div>
+
+    {/* Branch sub-row */}
+    {currentBranch && (
+      <div
+        className="flex items-center gap-1 px-3 pb-1.5"
+        style={{ opacity: 0.5 }}
+      >
+        <span className="text-xs" style={{ color: 'var(--vscode-foreground, #ccc)' }}>Current Branch: ⎇ {currentBranch}</span>
+      </div>
+    )}
     </div>
   );
 }

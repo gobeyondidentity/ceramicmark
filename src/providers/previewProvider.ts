@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 import type { ICommentStore } from '../store/ICommentStore.js';
 import type { MemberStore } from '../store/memberStore.js';
 import type { Comment, ExtensionMessage, WebviewMessage, Reply } from '../types.js';
-import { getGitIdentity } from '../auth/gitIdentity.js';
+import { getGitIdentity, getGitBranch } from '../auth/gitIdentity.js';
 
 export class PreviewProvider {
   public static readonly viewType = 'ceramicMark.preview';
@@ -66,7 +66,8 @@ export class PreviewProvider {
       }
 
       case 'addComment': {
-        const author = await getGitIdentity();
+        const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+        const [author, branch] = await Promise.all([getGitIdentity(), getGitBranch(cwd)]);
         const comment: Comment = {
           id: randomUUID(),
           createdAt: new Date().toISOString(),
@@ -77,6 +78,7 @@ export class PreviewProvider {
           mentions: message.mentions ?? [],
           replies: [],
           status: 'open',
+          branch,
         };
         await this.store.add(comment);
         this.postMessage({ type: 'commentAdded', comment });
@@ -123,9 +125,14 @@ export class PreviewProvider {
   }
 
   private async sendIdentity(): Promise<void> {
-    const author = await getGitIdentity();
+    const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    const [author, branch, members] = await Promise.all([
+      getGitIdentity(),
+      getGitBranch(cwd),
+      this.memberStore.getAll(),
+    ]);
     this.postMessage({ type: 'identity', author });
-    const members = await this.memberStore.getAll();
+    this.postMessage({ type: 'setBranch', branch });
     this.postMessage({ type: 'loadMembers', members });
   }
 

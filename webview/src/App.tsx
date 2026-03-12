@@ -13,6 +13,7 @@ interface State {
   pinsVisible: boolean;
   focusedPinId: string | null;
   unreadIds: Set<string>;
+  currentBranch: string | null;
 }
 
 type Action =
@@ -26,7 +27,8 @@ type Action =
   | { type: 'TOGGLE_PINS_VISIBLE' }
   | { type: 'FOCUS_PIN'; commentId: string }
   | { type: 'LOAD_MEMBERS'; members: Member[] }
-  | { type: 'MARK_READ'; commentId: string };
+  | { type: 'MARK_READ'; commentId: string }
+  | { type: 'SET_BRANCH'; branch: string };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -70,6 +72,8 @@ function reducer(state: State, action: Action): State {
       unreadIds.delete(action.commentId);
       return { ...state, unreadIds };
     }
+    case 'SET_BRANCH':
+      return { ...state, currentBranch: action.branch };
     default:
       return state;
   }
@@ -84,6 +88,7 @@ const initialState: State = {
   pinsVisible: true,
   focusedPinId: null,
   unreadIds: new Set(),
+  currentBranch: null,
 };
 
 export function App(): React.ReactElement {
@@ -119,6 +124,9 @@ export function App(): React.ReactElement {
         case 'focusPin':
           dispatch({ type: 'FOCUS_PIN', commentId: message.commentId });
           break;
+        case 'setBranch':
+          dispatch({ type: 'SET_BRANCH', branch: message.branch });
+          break;
         case 'loadMembers':
           dispatch({ type: 'LOAD_MEMBERS', members: message.members });
           break;
@@ -137,6 +145,7 @@ export function App(): React.ReactElement {
         previewUrl={state.previewUrl}
         commentMode={state.commentMode}
         pinsVisible={state.pinsVisible}
+        currentBranch={state.currentBranch}
         onUrlChange={(url) => dispatch({ type: 'SET_URL', url })}
         onToggleCommentMode={() => dispatch({ type: 'TOGGLE_COMMENT_MODE' })}
         onTogglePinsVisible={() => dispatch({ type: 'TOGGLE_PINS_VISIBLE' })}
@@ -149,6 +158,7 @@ export function App(): React.ReactElement {
         focusedPinId={state.focusedPinId}
         memberNames={memberNames}
         unreadIds={state.unreadIds}
+        currentBranch={state.currentBranch}
         onCommentModeExit={() => dispatch({ type: 'TOGGLE_COMMENT_MODE' })}
         onClearFocus={() => dispatch({ type: 'FOCUS_PIN', commentId: '' })}
         onMarkRead={(commentId) => dispatch({ type: 'MARK_READ', commentId })}

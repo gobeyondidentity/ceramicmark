@@ -23,6 +23,7 @@ interface CommentOverlayProps {
   memberNames: string[];
   containerSize: ContainerSize;
   unreadIds: Set<string>;
+  currentBranch: string | null;
   onPinClick: (x: number, y: number) => void;
   onClearFocus: () => void;
   onMarkRead: (commentId: string) => void;
@@ -41,6 +42,7 @@ export function CommentOverlay({
   memberNames,
   containerSize,
   unreadIds,
+  currentBranch,
   onPinClick,
   onClearFocus,
   onMarkRead,
@@ -107,6 +109,7 @@ export function CommentOverlay({
           isActive={activeCommentId === comment.id}
           isFocused={focusedPinId === comment.id}
           isUnread={unreadIds.has(comment.id)}
+          isOffBranch={!!(comment.branch && currentBranch && comment.branch !== currentBranch)}
           memberNames={memberNames}
           containerSize={containerSize}
           onActivate={() => handleActivate(comment.id)}
@@ -191,12 +194,13 @@ interface CommentPinProps {
   isActive: boolean;
   isFocused: boolean;
   isUnread: boolean;
+  isOffBranch: boolean;
   memberNames: string[];
   containerSize: ContainerSize;
   onActivate: () => void;
 }
 
-function CommentPin({ comment, isActive, isFocused, isUnread, memberNames, containerSize, onActivate }: CommentPinProps): React.ReactElement {
+function CommentPin({ comment, isActive, isFocused, isUnread, isOffBranch, memberNames, containerSize, onActivate }: CommentPinProps): React.ReactElement {
   const isResolved = comment.status === 'resolved';
 
   return (
@@ -207,6 +211,7 @@ function CommentPin({ comment, isActive, isFocused, isUnread, memberNames, conta
         top: toPixel(comment.position.y, containerSize.height),
         transform: 'translate(-50%, -50%)',
         zIndex: isActive ? 50 : 10,
+        opacity: isOffBranch ? 0.4 : 1,
       }}
       onClick={(e) => {
         e.stopPropagation();
@@ -238,7 +243,7 @@ function CommentPin({ comment, isActive, isFocused, isUnread, memberNames, conta
             color: '#fff',
             opacity: isResolved ? 0.7 : 1,
           }}
-          title={`${comment.author.name}: ${comment.body}`}
+          title={`${comment.author.name}: ${comment.body}${isOffBranch ? ` · made on: ${comment.branch}` : ''}`}
         >
           {isResolved ? '✓' : <span className="text-xs font-bold">{comment.replies.length + 1}</span>}
         </div>
