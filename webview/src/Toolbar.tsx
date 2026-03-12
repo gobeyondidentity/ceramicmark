@@ -47,15 +47,16 @@ export function Toolbar({
       />
 
       {/* URL bar */}
-      <form onSubmit={handleSubmit} className="flex flex-1 items-center gap-1 min-w-0">
+      <form onSubmit={handleSubmit} className="flex flex-1 justify-center items-center gap-1 min-w-0">
         <input
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onFocus={() => { if (!inputValue) setInputValue('http://localhost:'); }}
           placeholder="Enter Dev Server: ex http://localhost:3000 | Press Enter"
-          className="flex-1 px-2 py-1 text-xs rounded min-w-0 outline-none placeholder-[#FF6F00]"
+          className="px-2 py-1 text-xs rounded outline-none placeholder-[#FF6F00]"
           style={{
+            width: '420px',
             background: 'transparent',
             color: '#FF6F00',
             border: '1px solid #FF6F00',
@@ -111,10 +112,10 @@ export function Toolbar({
     {/* Branch sub-row */}
     {currentBranch && (
       <div
-        className="flex items-center gap-1 px-3 pb-1.5"
-        style={{ opacity: 0.5 }}
+        className="flex items-center gap-1 px-3 py-1"
+        style={{ background: '#FF6F00' }}
       >
-        <span className="text-xs" style={{ color: 'var(--vscode-foreground, #ccc)' }}>Current Branch: ⎇ {currentBranch}</span>
+        <span className="text-xs" style={{ color: 'var(--vscode-titleBar-activeBackground, #3c3c3c)' }}>Current Branch: ⎇ {currentBranch}</span>
       </div>
     )}
     </div>
