@@ -61,7 +61,11 @@ export function PreviewFrame({
   );
 
   return (
-    <div ref={containerRef} className="relative flex-1 overflow-hidden">
+    <div
+      ref={containerRef}
+      className="relative flex-1 overflow-hidden"
+      style={commentMode ? { outline: '2px solid #FF6F00', outlineOffset: '-2px' } : undefined}
+    >
       {/* The live preview iframe */}
       <iframe
         src={url}
