@@ -9,6 +9,7 @@ interface State {
   comments: Comment[];
   identity: Author | null;
   commentMode: boolean;
+  pinsVisible: boolean;
 }
 
 type Action =
@@ -17,7 +18,8 @@ type Action =
   | { type: 'LOAD_COMMENTS'; comments: Comment[] }
   | { type: 'ADD_COMMENT'; comment: Comment }
   | { type: 'UPDATE_COMMENT'; comment: Comment }
-  | { type: 'TOGGLE_COMMENT_MODE' };
+  | { type: 'TOGGLE_COMMENT_MODE' }
+  | { type: 'TOGGLE_PINS_VISIBLE' };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -36,6 +38,8 @@ function reducer(state: State, action: Action): State {
       };
     case 'TOGGLE_COMMENT_MODE':
       return { ...state, commentMode: !state.commentMode };
+    case 'TOGGLE_PINS_VISIBLE':
+      return { ...state, pinsVisible: !state.pinsVisible };
     default:
       return state;
   }
@@ -46,6 +50,7 @@ const initialState: State = {
   comments: [],
   identity: null,
   commentMode: false,
+  pinsVisible: true,
 };
 
 export function App(): React.ReactElement {
@@ -87,14 +92,17 @@ export function App(): React.ReactElement {
       <Toolbar
         previewUrl={state.previewUrl}
         commentMode={state.commentMode}
+        pinsVisible={state.pinsVisible}
         identity={state.identity}
         onUrlChange={(url) => dispatch({ type: 'SET_URL', url })}
         onToggleCommentMode={() => dispatch({ type: 'TOGGLE_COMMENT_MODE' })}
+        onTogglePinsVisible={() => dispatch({ type: 'TOGGLE_PINS_VISIBLE' })}
       />
       <PreviewFrame
         url={state.previewUrl}
         comments={state.comments}
         commentMode={state.commentMode}
+        pinsVisible={state.pinsVisible}
         onCommentModeExit={() => dispatch({ type: 'TOGGLE_COMMENT_MODE' })}
       />
     </div>

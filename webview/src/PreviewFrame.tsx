@@ -6,6 +6,7 @@ interface PreviewFrameProps {
   url: string;
   comments: Comment[];
   commentMode: boolean;
+  pinsVisible: boolean;
   onCommentModeExit: () => void;
 }
 
@@ -13,6 +14,7 @@ export function PreviewFrame({
   url,
   comments,
   commentMode,
+  pinsVisible,
   onCommentModeExit,
 }: PreviewFrameProps): React.ReactElement {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -64,6 +66,7 @@ export function PreviewFrame({
       <CommentOverlay
         comments={comments}
         commentMode={commentMode}
+        pinsVisible={pinsVisible}
         onPinClick={handleOverlayClick}
       />
 

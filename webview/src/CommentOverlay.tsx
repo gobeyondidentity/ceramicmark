@@ -11,12 +11,14 @@ interface DraftPin {
 interface CommentOverlayProps {
   comments: Comment[];
   commentMode: boolean;
+  pinsVisible: boolean;
   onPinClick: (x: number, y: number) => void;
 }
 
 export function CommentOverlay({
   comments,
   commentMode,
+  pinsVisible,
   onPinClick,
 }: CommentOverlayProps): React.ReactElement {
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
@@ -58,7 +60,7 @@ export function CommentOverlay({
       onClick={handleOverlayClick}
     >
       {/* Existing comment pins */}
-      {comments.map((comment) => (
+      {pinsVisible && comments.map((comment) => (
         <CommentPin
           key={comment.id}
           comment={comment}

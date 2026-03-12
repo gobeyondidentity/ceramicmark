@@ -34,7 +34,7 @@
         {
           "id": "ceramicMark",
           "title": "CeramicMark",
-          "icon": "$(comment-discussion)"
+          "icon": "images/cm_icon.svg"
         }
       ]
     },
