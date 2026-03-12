@@ -1,7 +1,9 @@
 import * as vscode from 'vscode';
 import { FileStore } from './store/fileStore.js';
+import { MemberStore } from './store/memberStore.js';
 import { PreviewProvider } from './providers/previewProvider.js';
 import { CommentTreeProvider, CommentItem } from './providers/commentTreeProvider.js';
+import { getGitIdentity } from './auth/gitIdentity.js';
 
 export function activate(context: vscode.ExtensionContext): void {
   const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
@@ -15,8 +17,16 @@ export function activate(context: vscode.ExtensionContext): void {
   }
 
   const store = new FileStore(workspaceRoot);
-  const previewProvider = new PreviewProvider(context, store);
+  const memberStore = new MemberStore(workspaceRoot);
+  const previewProvider = new PreviewProvider(context, store, memberStore);
   const treeProvider = new CommentTreeProvider(store);
+
+  // Seed the members file with the current user and wire identity to tree provider
+  getGitIdentity().then(async (author) => {
+    await memberStore.ensureCurrentUser(author);
+    await memberStore.syncFromGitLog(workspaceRoot);
+    treeProvider.setIdentity(author.name);
+  });
 
   // Refresh sidebar whenever comments change
   previewProvider.onCommentChanged(() => {

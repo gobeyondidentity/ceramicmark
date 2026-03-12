@@ -2,7 +2,42 @@ import * as vscode from 'vscode';
 import type { ICommentStore } from '../store/ICommentStore.js';
 import type { Comment, Reply } from '../types.js';
 
-type TreeNode = AuthorItem | CommentItem | ReplyItem;
+type TreeNode = MentionedYouItem | MentionedCommentItem | AuthorItem | CommentItem | ReplyItem;
+
+// ─── Mentioned You ───────────────────────────────────────────────────────────
+
+export class MentionedYouItem extends vscode.TreeItem {
+  constructor(public readonly mentionedComments: Comment[]) {
+    super('Mentioned You', vscode.TreeItemCollapsibleState.Expanded);
+    this.description = `${mentionedComments.length}`;
+    this.iconPath = new vscode.ThemeIcon('mention');
+    this.contextValue = 'mentionedYou';
+  }
+}
+
+/** A comment shown under "Mentioned You" — same click behaviour as CommentItem */
+export class MentionedCommentItem extends vscode.TreeItem {
+  constructor(public readonly comment: Comment) {
+    const label = comment.body.length > 60
+      ? comment.body.slice(0, 57) + '...'
+      : comment.body;
+
+    super(label, vscode.TreeItemCollapsibleState.None);
+
+    this.description = comment.author.name;
+    this.tooltip = `${comment.author.name}: ${comment.body}`;
+    this.iconPath = new vscode.ThemeIcon('comment');
+    this.contextValue = 'mentionedComment';
+
+    this.command = {
+      command: 'ceramicMark.focusPin',
+      title: 'Focus pin',
+      arguments: [comment.id],
+    };
+  }
+}
+
+// ─── Author groups ────────────────────────────────────────────────────────────
 
 export class AuthorItem extends vscode.TreeItem {
   constructor(
@@ -68,11 +103,20 @@ export class ReplyItem extends vscode.TreeItem {
   }
 }
 
+// ─── Provider ─────────────────────────────────────────────────────────────────
+
 export class CommentTreeProvider implements vscode.TreeDataProvider<TreeNode> {
   private readonly onDidChangeTreeDataEmitter = new vscode.EventEmitter<TreeNode | undefined | void>();
   public readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
 
+  private currentUserName: string | null = null;
+
   constructor(private readonly store: ICommentStore) {}
+
+  public setIdentity(name: string): void {
+    this.currentUserName = name;
+    this.onDidChangeTreeDataEmitter.fire();
+  }
 
   public refresh(): void {
     this.onDidChangeTreeDataEmitter.fire();
@@ -83,21 +127,43 @@ export class CommentTreeProvider implements vscode.TreeDataProvider<TreeNode> {
   }
 
   async getChildren(element?: TreeNode): Promise<TreeNode[]> {
-    // Root level: group comments by author, sorted alphabetically
+    // Root level
     if (!element) {
       const comments = await this.store.getAll();
+      const result: TreeNode[] = [];
+
+      // "Mentioned You" section — only shown when identity is known and mentions exist
+      if (this.currentUserName) {
+        const mentionPattern = `@${this.currentUserName}`;
+        const mentioned = comments.filter((c) => {
+          if (c.body.includes(mentionPattern)) return true;
+          return c.replies.some((r) => r.body.includes(mentionPattern));
+        });
+        if (mentioned.length > 0) {
+          result.push(new MentionedYouItem(mentioned));
+        }
+      }
+
+      // Author groups, sorted alphabetically
       const byAuthor = new Map<string, Comment[]>();
       for (const comment of comments) {
         const name = comment.author.name;
         if (!byAuthor.has(name)) byAuthor.set(name, []);
         byAuthor.get(name)!.push(comment);
       }
-      return [...byAuthor.entries()]
+      const authorItems = [...byAuthor.entries()]
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([name, authorComments]) => new AuthorItem(name, authorComments));
+
+      return [...result, ...authorItems];
     }
 
-    // Author level: show their comments (open first, then resolved, newest first within each)
+    // "Mentioned You" children
+    if (element instanceof MentionedYouItem) {
+      return element.mentionedComments.map((c) => new MentionedCommentItem(c));
+    }
+
+    // Author children — open first, then resolved, newest first within each
     if (element instanceof AuthorItem) {
       return [...element.comments]
         .sort((a, b) => {
@@ -107,7 +173,7 @@ export class CommentTreeProvider implements vscode.TreeDataProvider<TreeNode> {
         .map((c) => new CommentItem(c));
     }
 
-    // Comment level: show replies in the thread
+    // Comment children — replies in the thread
     if (element instanceof CommentItem) {
       return element.comment.replies.map((r) => new ReplyItem(r, element.comment.id));
     }

@@ -9,6 +9,7 @@ interface PreviewFrameProps {
   commentMode: boolean;
   pinsVisible: boolean;
   focusedPinId: string | null;
+  memberNames: string[];
   onCommentModeExit: () => void;
   onClearFocus: () => void;
 }
@@ -19,6 +20,7 @@ export function PreviewFrame({
   commentMode,
   pinsVisible,
   focusedPinId,
+  memberNames,
   onCommentModeExit,
   onClearFocus,
 }: PreviewFrameProps): React.ReactElement {
@@ -70,6 +72,7 @@ export function PreviewFrame({
         commentMode={commentMode}
         pinsVisible={pinsVisible}
         focusedPinId={focusedPinId}
+        memberNames={memberNames}
         onPinClick={handleOverlayClick}
         onClearFocus={onClearFocus}
       />

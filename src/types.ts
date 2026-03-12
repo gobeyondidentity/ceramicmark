@@ -3,6 +3,16 @@ export interface Author {
   email: string;
 }
 
+export interface Member {
+  name: string;
+  email: string;
+}
+
+export interface MembersFile {
+  version: 1;
+  members: Member[];
+}
+
 export interface Position {
   /** Percentage (0–100) of the iframe width */
   x: number;
@@ -24,6 +34,7 @@ export interface Reply {
   createdAt: string;
   author: Author;
   body: string;
+  mentions?: string[];
 }
 
 export interface Comment {
@@ -34,6 +45,7 @@ export interface Comment {
   /** Optional association with a source file location */
   codeRef?: CodeRef;
   body: string;
+  mentions?: string[];
   replies: Reply[];
   status: 'open' | 'resolved';
 }
@@ -50,13 +62,14 @@ export type ExtensionMessage =
   | { type: 'commentUpdated'; comment: Comment }
   | { type: 'commentDeleted'; commentId: string }
   | { type: 'focusPin'; commentId: string }
-  | { type: 'identity'; author: Author };
+  | { type: 'identity'; author: Author }
+  | { type: 'loadMembers'; members: Member[] };
 
 // Messages sent from the webview → extension host
 export type WebviewMessage =
   | { type: 'ready' }
-  | { type: 'addComment'; position: Position; body: string; codeRef?: CodeRef }
-  | { type: 'addReply'; commentId: string; body: string }
+  | { type: 'addComment'; position: Position; body: string; codeRef?: CodeRef; mentions?: string[] }
+  | { type: 'addReply'; commentId: string; body: string; mentions?: string[] }
   | { type: 'resolveComment'; commentId: string }
   | { type: 'reopenComment'; commentId: string }
   | { type: 'requestComments' };

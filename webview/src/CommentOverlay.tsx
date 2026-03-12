@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { vscodeApi } from './vscode.js';
 import { CommentThread } from './CommentThread.js';
+import { MentionTextarea } from './MentionTextarea.js';
+import { parseMentions } from './utils.js';
 import type { Comment, Position } from './types.js';
 
 interface DraftPin {
@@ -13,6 +15,7 @@ interface CommentOverlayProps {
   commentMode: boolean;
   pinsVisible: boolean;
   focusedPinId: string | null;
+  memberNames: string[];
   onPinClick: (x: number, y: number) => void;
   onClearFocus: () => void;
 }
@@ -22,6 +25,7 @@ export function CommentOverlay({
   commentMode,
   pinsVisible,
   focusedPinId,
+  memberNames,
   onPinClick,
   onClearFocus,
 }: CommentOverlayProps): React.ReactElement {
@@ -54,7 +58,8 @@ export function CommentOverlay({
   const submitDraft = useCallback(() => {
     if (!draftPin || !draftBody.trim()) return;
     const position: Position = { x: draftPin.x, y: draftPin.y, scrollY: 0 };
-    vscodeApi.postMessage({ type: 'addComment', position, body: draftBody.trim() });
+    const mentions = parseMentions(draftBody);
+    vscodeApi.postMessage({ type: 'addComment', position, body: draftBody.trim(), mentions });
     setDraftPin(null);
     setDraftBody('');
   }, [draftPin, draftBody]);
@@ -83,6 +88,7 @@ export function CommentOverlay({
           comment={comment}
           isActive={activeCommentId === comment.id}
           isFocused={focusedPinId === comment.id}
+          memberNames={memberNames}
           onActivate={() => handleActivate(comment.id)}
         />
       ))}
@@ -108,15 +114,16 @@ export function CommentOverlay({
               border: '1px solid var(--vscode-panel-border, #454545)',
             }}
           >
-            <textarea
+            <MentionTextarea
               autoFocus
               value={draftBody}
-              onChange={(e) => setDraftBody(e.target.value)}
+              onChange={setDraftBody}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submitDraft();
                 if (e.key === 'Escape') cancelDraft();
               }}
-              placeholder="Leave a comment..."
+              knownNames={memberNames}
+              placeholder="Leave a comment... (type @ to mention)"
               rows={3}
               className="w-full resize-none text-xs rounded p-2 outline-none"
               style={{
@@ -159,10 +166,11 @@ interface CommentPinProps {
   comment: Comment;
   isActive: boolean;
   isFocused: boolean;
+  memberNames: string[];
   onActivate: () => void;
 }
 
-function CommentPin({ comment, isActive, isFocused, onActivate }: CommentPinProps): React.ReactElement {
+function CommentPin({ comment, isActive, isFocused, memberNames, onActivate }: CommentPinProps): React.ReactElement {
   const isResolved = comment.status === 'resolved';
 
   return (
@@ -211,7 +219,7 @@ function CommentPin({ comment, isActive, isFocused, onActivate }: CommentPinProp
       {/* Thread popover */}
       {isActive && (
         <div onClick={(e) => e.stopPropagation()}>
-          <CommentThread comment={comment} onClose={onActivate} />
+          <CommentThread comment={comment} memberNames={memberNames} onClose={onActivate} />
         </div>
       )}
     </div>

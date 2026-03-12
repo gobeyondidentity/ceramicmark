@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
 import { vscodeApi } from './vscode.js';
+import { MentionTextarea } from './MentionTextarea.js';
+import { parseMentions } from './utils.js';
 import type { Comment } from './types.js';
 
 interface CommentThreadProps {
   comment: Comment;
+  memberNames: string[];
   onClose: () => void;
 }
 
-export function CommentThread({ comment, onClose }: CommentThreadProps): React.ReactElement {
+export function CommentThread({ comment, memberNames, onClose }: CommentThreadProps): React.ReactElement {
   const [replyBody, setReplyBody] = useState('');
 
   const submitReply = () => {
     if (!replyBody.trim()) return;
-    vscodeApi.postMessage({ type: 'addReply', commentId: comment.id, body: replyBody.trim() });
+    const mentions = parseMentions(replyBody);
+    vscodeApi.postMessage({ type: 'addReply', commentId: comment.id, body: replyBody.trim(), mentions });
     setReplyBody('');
   };
 
@@ -95,13 +99,14 @@ export function CommentThread({ comment, onClose }: CommentThreadProps): React.R
           className="px-3 py-2 shrink-0 flex flex-col gap-2"
           style={{ borderTop: '1px solid var(--vscode-panel-border, #454545)' }}
         >
-          <textarea
+          <MentionTextarea
             value={replyBody}
-            onChange={(e) => setReplyBody(e.target.value)}
+            onChange={setReplyBody}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submitReply();
             }}
-            placeholder="Reply... (⌘↵ to send)"
+            knownNames={memberNames}
+            placeholder="Reply... (type @ to mention, ⌘↵ to send)"
             rows={2}
             className="w-full resize-none text-xs rounded p-2 outline-none"
             style={{
@@ -146,7 +151,36 @@ function MessageBubble({
         <span className="text-xs font-semibold">{name}</span>
         <span className="text-xs opacity-40">{timeLabel}</span>
       </div>
-      <p className="text-xs leading-relaxed whitespace-pre-wrap break-words">{body}</p>
+      <p className="text-xs leading-relaxed whitespace-pre-wrap break-words">
+        <MentionBody body={body} />
+      </p>
     </div>
+  );
+}
+
+/** Renders body text with @Name mentions highlighted as blue chips. */
+function MentionBody({ body }: { body: string }): React.ReactElement {
+  // Split on @Word patterns (greedy match up to whitespace or end)
+  const parts = body.split(/(@\S+)/g);
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (part.startsWith('@') && part.length > 1) {
+          return (
+            <span
+              key={i}
+              className="inline-block rounded px-1 text-xs font-medium"
+              style={{
+                background: 'rgba(59,130,246,0.2)',
+                color: '#60a5fa',
+              }}
+            >
+              {part}
+            </span>
+          );
+        }
+        return <React.Fragment key={i}>{part}</React.Fragment>;
+      })}
+    </>
   );
 }

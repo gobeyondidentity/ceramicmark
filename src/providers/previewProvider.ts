@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
 import type { ICommentStore } from '../store/ICommentStore.js';
+import type { MemberStore } from '../store/memberStore.js';
 import type { Comment, ExtensionMessage, WebviewMessage, Reply } from '../types.js';
 import { getGitIdentity } from '../auth/gitIdentity.js';
 
@@ -14,6 +15,7 @@ export class PreviewProvider {
   constructor(
     private readonly context: vscode.ExtensionContext,
     private readonly store: ICommentStore,
+    private readonly memberStore: MemberStore,
   ) {}
 
   public open(): void {
@@ -71,6 +73,7 @@ export class PreviewProvider {
           position: message.position,
           codeRef: message.codeRef,
           body: message.body,
+          mentions: message.mentions ?? [],
           replies: [],
           status: 'open',
         };
@@ -90,6 +93,7 @@ export class PreviewProvider {
           createdAt: new Date().toISOString(),
           author,
           body: message.body,
+          mentions: message.mentions ?? [],
         };
         target.replies.push(reply);
         await this.store.update(target);
@@ -120,6 +124,8 @@ export class PreviewProvider {
   private async sendIdentity(): Promise<void> {
     const author = await getGitIdentity();
     this.postMessage({ type: 'identity', author });
+    const members = await this.memberStore.getAll();
+    this.postMessage({ type: 'loadMembers', members });
   }
 
   private postMessage(message: ExtensionMessage): void {
