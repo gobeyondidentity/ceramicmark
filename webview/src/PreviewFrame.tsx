@@ -10,8 +10,10 @@ interface PreviewFrameProps {
   pinsVisible: boolean;
   focusedPinId: string | null;
   memberNames: string[];
+  unreadIds: Set<string>;
   onCommentModeExit: () => void;
   onClearFocus: () => void;
+  onMarkRead: (commentId: string) => void;
 }
 
 export function PreviewFrame({
@@ -21,8 +23,10 @@ export function PreviewFrame({
   pinsVisible,
   focusedPinId,
   memberNames,
+  unreadIds,
   onCommentModeExit,
   onClearFocus,
+  onMarkRead,
 }: PreviewFrameProps): React.ReactElement {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
@@ -90,8 +94,10 @@ export function PreviewFrame({
         focusedPinId={focusedPinId}
         memberNames={memberNames}
         containerSize={containerSize}
+        unreadIds={unreadIds}
         onPinClick={handleOverlayClick}
         onClearFocus={onClearFocus}
+        onMarkRead={onMarkRead}
       />
 
       {/* Comment mode cursor hint */}

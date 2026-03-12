@@ -22,8 +22,10 @@ interface CommentOverlayProps {
   focusedPinId: string | null;
   memberNames: string[];
   containerSize: ContainerSize;
+  unreadIds: Set<string>;
   onPinClick: (x: number, y: number) => void;
   onClearFocus: () => void;
+  onMarkRead: (commentId: string) => void;
 }
 
 /** Convert a stored percentage (0–100) to a pixel value, falling back to % if not yet measured. */
@@ -38,17 +40,20 @@ export function CommentOverlay({
   focusedPinId,
   memberNames,
   containerSize,
+  unreadIds,
   onPinClick,
   onClearFocus,
+  onMarkRead,
 }: CommentOverlayProps): React.ReactElement {
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
   const [draftPin, setDraftPin] = useState<DraftPin | null>(null);
   const [draftBody, setDraftBody] = useState('');
 
-  // When a pin is focused from the sidebar, auto-open its thread
+  // When a pin is focused from the sidebar, auto-open its thread and mark as read
   useEffect(() => {
     if (focusedPinId) {
       setActiveCommentId(focusedPinId);
+      onMarkRead(focusedPinId);
     }
   }, [focusedPinId]);
 
@@ -84,8 +89,9 @@ export function CommentOverlay({
   const handleActivate = useCallback((id: string) => {
     const next = activeCommentId === id ? null : id;
     setActiveCommentId(next);
-    if (!next) onClearFocus();
-  }, [activeCommentId, onClearFocus]);
+    if (next) onMarkRead(next);
+    else onClearFocus();
+  }, [activeCommentId, onClearFocus, onMarkRead]);
 
   return (
     <div
@@ -100,6 +106,7 @@ export function CommentOverlay({
           comment={comment}
           isActive={activeCommentId === comment.id}
           isFocused={focusedPinId === comment.id}
+          isUnread={unreadIds.has(comment.id)}
           memberNames={memberNames}
           containerSize={containerSize}
           onActivate={() => handleActivate(comment.id)}
@@ -183,12 +190,13 @@ interface CommentPinProps {
   comment: Comment;
   isActive: boolean;
   isFocused: boolean;
+  isUnread: boolean;
   memberNames: string[];
   containerSize: ContainerSize;
   onActivate: () => void;
 }
 
-function CommentPin({ comment, isActive, isFocused, memberNames, containerSize, onActivate }: CommentPinProps): React.ReactElement {
+function CommentPin({ comment, isActive, isFocused, isUnread, memberNames, containerSize, onActivate }: CommentPinProps): React.ReactElement {
   const isResolved = comment.status === 'resolved';
 
   return (
@@ -221,17 +229,27 @@ function CommentPin({ comment, isActive, isFocused, memberNames, containerSize, 
       )}
 
       {/* Pin marker */}
-      <div
-        className="w-6 h-6 rounded-full border-2 flex items-center justify-center cursor-pointer shadow-md transition-transform hover:scale-110"
-        style={{
-          background: isResolved ? '#22c55e' : 'var(--vscode-button-background, #FF6F00)',
-          borderColor: isFocused ? '#fff' : 'rgba(255,255,255,0.6)',
-          color: '#fff',
-          opacity: isResolved ? 0.7 : 1,
-        }}
-        title={`${comment.author.name}: ${comment.body}`}
-      >
-        {isResolved ? '✓' : <span className="text-xs font-bold">{comment.replies.length + 1}</span>}
+      <div className="relative">
+        <div
+          className="w-6 h-6 rounded-full border-2 flex items-center justify-center cursor-pointer shadow-md transition-transform hover:scale-110"
+          style={{
+            background: isResolved ? '#22c55e' : 'var(--vscode-button-background, #FF6F00)',
+            borderColor: isFocused ? '#fff' : 'rgba(255,255,255,0.6)',
+            color: '#fff',
+            opacity: isResolved ? 0.7 : 1,
+          }}
+          title={`${comment.author.name}: ${comment.body}`}
+        >
+          {isResolved ? '✓' : <span className="text-xs font-bold">{comment.replies.length + 1}</span>}
+        </div>
+        {isUnread && (
+          <span style={{
+            position: 'absolute', top: '-3px', right: '-3px',
+            width: '8px', height: '8px', borderRadius: '50%',
+            background: '#fff', border: '2px solid #FF6F00',
+            pointerEvents: 'none',
+          }} />
+        )}
       </div>
 
       {/* Thread popover */}

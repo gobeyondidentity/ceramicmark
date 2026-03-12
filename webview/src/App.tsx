@@ -12,19 +12,21 @@ interface State {
   commentMode: boolean;
   pinsVisible: boolean;
   focusedPinId: string | null;
+  unreadIds: Set<string>;
 }
 
 type Action =
   | { type: 'SET_URL'; url: string }
   | { type: 'SET_IDENTITY'; author: Author }
   | { type: 'LOAD_COMMENTS'; comments: Comment[] }
-  | { type: 'ADD_COMMENT'; comment: Comment }
-  | { type: 'UPDATE_COMMENT'; comment: Comment }
+  | { type: 'ADD_COMMENT'; comment: Comment; identityEmail: string | null }
+  | { type: 'UPDATE_COMMENT'; comment: Comment; identityEmail: string | null }
   | { type: 'DELETE_COMMENT'; commentId: string }
   | { type: 'TOGGLE_COMMENT_MODE' }
   | { type: 'TOGGLE_PINS_VISIBLE' }
   | { type: 'FOCUS_PIN'; commentId: string }
-  | { type: 'LOAD_MEMBERS'; members: Member[] };
+  | { type: 'LOAD_MEMBERS'; members: Member[] }
+  | { type: 'MARK_READ'; commentId: string };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -34,13 +36,25 @@ function reducer(state: State, action: Action): State {
       return { ...state, identity: action.author };
     case 'LOAD_COMMENTS':
       return { ...state, comments: action.comments };
-    case 'ADD_COMMENT':
-      return { ...state, comments: [...state.comments, action.comment], commentMode: false };
-    case 'UPDATE_COMMENT':
+    case 'ADD_COMMENT': {
+      const unreadIds = new Set(state.unreadIds);
+      if (action.identityEmail && action.comment.author.email !== action.identityEmail) {
+        unreadIds.add(action.comment.id);
+      }
+      return { ...state, comments: [...state.comments, action.comment], commentMode: false, unreadIds };
+    }
+    case 'UPDATE_COMMENT': {
+      const unreadIds = new Set(state.unreadIds);
+      const lastReply = action.comment.replies.at(-1);
+      if (lastReply && action.identityEmail && lastReply.author.email !== action.identityEmail) {
+        unreadIds.add(action.comment.id);
+      }
       return {
         ...state,
         comments: state.comments.map((c) => c.id === action.comment.id ? action.comment : c),
+        unreadIds,
       };
+    }
     case 'DELETE_COMMENT':
       return { ...state, comments: state.comments.filter((c) => c.id !== action.commentId) };
     case 'TOGGLE_COMMENT_MODE':
@@ -51,6 +65,11 @@ function reducer(state: State, action: Action): State {
       return { ...state, focusedPinId: action.commentId, pinsVisible: true };
     case 'LOAD_MEMBERS':
       return { ...state, members: action.members };
+    case 'MARK_READ': {
+      const unreadIds = new Set(state.unreadIds);
+      unreadIds.delete(action.commentId);
+      return { ...state, unreadIds };
+    }
     default:
       return state;
   }
@@ -64,11 +83,13 @@ const initialState: State = {
   commentMode: false,
   pinsVisible: true,
   focusedPinId: null,
+  unreadIds: new Set(),
 };
 
 export function App(): React.ReactElement {
   const [state, dispatch] = useReducer(reducer, initialState);
   const isMounted = useRef(false);
+  const identityRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (isMounted.current) return;
@@ -80,16 +101,17 @@ export function App(): React.ReactElement {
       const message = event.data as ExtensionMessage;
       switch (message.type) {
         case 'identity':
+          identityRef.current = message.author.email;
           dispatch({ type: 'SET_IDENTITY', author: message.author });
           break;
         case 'loadComments':
           dispatch({ type: 'LOAD_COMMENTS', comments: message.comments });
           break;
         case 'commentAdded':
-          dispatch({ type: 'ADD_COMMENT', comment: message.comment });
+          dispatch({ type: 'ADD_COMMENT', comment: message.comment, identityEmail: identityRef.current });
           break;
         case 'commentUpdated':
-          dispatch({ type: 'UPDATE_COMMENT', comment: message.comment });
+          dispatch({ type: 'UPDATE_COMMENT', comment: message.comment, identityEmail: identityRef.current });
           break;
         case 'commentDeleted':
           dispatch({ type: 'DELETE_COMMENT', commentId: message.commentId });
@@ -126,8 +148,10 @@ export function App(): React.ReactElement {
         pinsVisible={state.pinsVisible}
         focusedPinId={state.focusedPinId}
         memberNames={memberNames}
+        unreadIds={state.unreadIds}
         onCommentModeExit={() => dispatch({ type: 'TOGGLE_COMMENT_MODE' })}
         onClearFocus={() => dispatch({ type: 'FOCUS_PIN', commentId: '' })}
+        onMarkRead={(commentId) => dispatch({ type: 'MARK_READ', commentId })}
       />
     </div>
   );
