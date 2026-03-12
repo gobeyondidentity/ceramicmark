@@ -1,8 +1,8 @@
 # CeramicMark
 
-Figma-style visual comment pins on live UI previews, inside VS Code and Cursor.
+An extension that lets product builders leave visual, pin-based comments directly on a live localhost preview — inside VS Code and Cursor.
 
-Designers and developers can drop threaded comment pins directly onto a running app preview — no switching tools, no screenshots, no Slack threads with "the button on the left... no the other one."
+Drop threaded comment pins directly onto a running app preview. No switching tools, no screenshots, no Slack threads with "the button on the left... no the other one."
 
 ---
 
@@ -11,11 +11,23 @@ Designers and developers can drop threaded comment pins directly onto a running 
 1. Open any project in VS Code or Cursor
 2. Start your dev server as normal (`npm run dev`, etc.)
 3. Open the CeramicMark panel from the activity bar
-4. Enter your localhost URL (e.g. `http://localhost:3000`)
+4. On the splash screen, enter your localhost URL (e.g. `http://localhost:3000`) and press Enter
 5. Click **Comment**, then click anywhere on the preview to drop a pin
 6. Your teammate pulls the repo, opens CeramicMark, and sees your pins
 
 Comments are stored in `.ide-comments/comments.json` inside your project — they travel with the repo, so no account or external service is needed.
+
+---
+
+## Features
+
+- **Visual pin-based comments** — click anywhere on the live preview to drop a comment pin
+- **Threaded replies** — reply to any comment directly in the pin popover
+- **Resolve / reopen** — mark comments as resolved when the issue is addressed
+- **@mentions** — type `@` in any comment or reply to mention a teammate by name
+- **Read/unread tracking** — new comments from others are marked unread with a dot indicator (session-based)
+- **Branch-scoped comments** — comments store the branch they were made on; pins from other branches are dimmed so you always know what's current
+- **Current branch display** — the active git branch is shown in the toolbar header
 
 ---
 
@@ -46,7 +58,7 @@ Use this if CeramicMark isn't on the marketplace yet and you need to run it loca
 
 6. Start your dev server for that project (e.g. `npm run dev`)
 
-7. Click the CeramicMark icon in the activity bar (left sidebar) and enter your localhost URL
+7. Click the CeramicMark icon in the activity bar, enter your localhost URL on the splash screen, and press Enter
 
 ---
 
@@ -86,5 +98,4 @@ git config user.email
 - [ ] Cloud sync with real-time collaboration (comments appear live as teammates add them)
 - [ ] GitHub/GitLab sign-in for verified identity and avatars
 - [ ] Onboarding setting: choose commit vs. gitignore for comment storage
-- [ ] @mentions and notifications
 - [ ] Link comment pins directly to specific lines of source code
