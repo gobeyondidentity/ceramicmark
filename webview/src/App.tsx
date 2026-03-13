@@ -221,6 +221,7 @@ export function App(): React.ReactElement {
           commentMode={state.commentMode}
           focusedComment={focusedComment}
           currentPage={state.currentPage}
+          comments={state.comments}
           onCommentModeExit={() => dispatch({ type: 'TOGGLE_COMMENT_MODE' })}
         />
       </div>

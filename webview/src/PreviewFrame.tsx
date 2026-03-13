@@ -7,6 +7,7 @@ interface PreviewFrameProps {
   commentMode: boolean;
   focusedComment: Comment | null;
   currentPage: string;
+  comments: Comment[];
   onCommentModeExit: () => void;
 }
 
@@ -16,6 +17,7 @@ export function PreviewFrame({
   commentMode,
   focusedComment,
   currentPage,
+  comments,
   onCommentModeExit,
 }: PreviewFrameProps): React.ReactElement {
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -37,6 +39,21 @@ export function PreviewFrame({
       '*',
     );
   }, [commentMode]);
+
+  // Send comment markers to iframe whenever comments or page changes
+  useEffect(() => {
+    const markerData = comments.map((c) => ({
+      elementId: c.anchor?.elementId,
+      testId: c.anchor?.testId,
+      tag: c.anchor?.tag,
+      text: c.anchor?.text,
+      status: c.status,
+    }));
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: 'cm-update-markers', comments: markerData },
+      '*',
+    );
+  }, [comments, currentPage]);
 
   // Navigate to comment's page if not already there
   useEffect(() => {

@@ -7,6 +7,51 @@ const COMPANION_SCRIPT = `<script>
   var _cmActive = false;
   var _cmHighlighted = null;
   var _cmPrevOutline = '';
+  var _cmMarkers = [];
+
+  function clearMarkers() {
+    for (var i = 0; i < _cmMarkers.length; i++) {
+      var m = _cmMarkers[i];
+      if (m.badge.parentNode) m.badge.parentNode.removeChild(m.badge);
+      if (m.wasStatic) m.el.style.position = m.prevPos;
+    }
+    _cmMarkers = [];
+  }
+
+  function renderMarkers(comments) {
+    clearMarkers();
+    var groups = {};
+    for (var i = 0; i < comments.length; i++) {
+      var c = comments[i];
+      if (c.status === 'resolved') continue;
+      var key = (c.elementId || '') + '|' + (c.testId || '') + '|' + (c.tag || '') + '|' + (c.text || '').slice(0, 20);
+      if (!groups[key]) groups[key] = { anchor: c, count: 0 };
+      groups[key].count++;
+    }
+    for (var k in groups) {
+      var g = groups[k];
+      var a = g.anchor;
+      var found = null;
+      if (a.elementId) found = document.getElementById(a.elementId);
+      if (!found && a.testId) found = document.querySelector('[data-testid="' + a.testId + '"]');
+      if (!found && a.tag && a.text) {
+        var els = document.querySelectorAll(a.tag);
+        for (var j = 0; j < els.length; j++) {
+          if ((els[j].textContent || '').trim().indexOf(a.text) !== -1) { found = els[j]; break; }
+        }
+      }
+      if (!found || found === document.body || found === document.documentElement) continue;
+      var badge = document.createElement('span');
+      badge.setAttribute('data-cm-badge', '1');
+      badge.style.cssText = 'position:absolute;top:-6px;right:-6px;min-width:14px;height:14px;background:#FF6F00;color:#fff;border-radius:7px;font-size:9px;font-weight:bold;display:inline-flex;align-items:center;justify-content:center;z-index:99999;pointer-events:none;line-height:1;padding:0 2px;box-shadow:0 1px 3px rgba(0,0,0,0.5);';
+      badge.textContent = g.count > 9 ? '9+' : String(g.count);
+      var prevPos = found.style.position;
+      var computedPos = window.getComputedStyle(found).position;
+      if (computedPos === 'static') found.style.position = 'relative';
+      found.appendChild(badge);
+      _cmMarkers.push({ el: found, badge: badge, prevPos: prevPos, wasStatic: computedPos === 'static' });
+    }
+  }
 
   function buildLabel(el) {
     var tag = el.tagName.toLowerCase();
@@ -102,6 +147,11 @@ const COMPANION_SCRIPT = `<script>
           found.style.boxShadow = prevShadow;
         }, 2000);
       }
+      return;
+    }
+
+    if (e.data.type === 'cm-update-markers') {
+      renderMarkers(e.data.comments || []);
       return;
     }
 

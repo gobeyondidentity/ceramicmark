@@ -3,6 +3,17 @@ import { CommentForm } from './CommentForm.js';
 import { CommentThread } from './CommentThread.js';
 import type { Comment, ElementAnchor } from './types.js';
 
+/** Convert a URL pathname to a friendly display label. e.g. "/" → "Homepage", "/user-profile" → "User Profile" */
+function pageLabel(url: string): string {
+  const path = url.split('?')[0].split('#')[0];
+  if (path === '/' || path === '') return 'Homepage';
+  return path
+    .split('/')
+    .filter(Boolean)
+    .map((s) => s.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()))
+    .join(' / ');
+}
+
 interface CommentSidebarProps {
   comments: Comment[];
   pendingAnchor: Partial<ElementAnchor> | null;
@@ -137,7 +148,7 @@ export function CommentSidebar({
                     }}
                     title={page}
                   >
-                    {page}
+                    {pageLabel(page)}
                   </span>
                   <span
                     className="text-xs ml-auto shrink-0 opacity-40"
