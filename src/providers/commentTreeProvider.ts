@@ -54,9 +54,10 @@ export class PageItem extends vscode.TreeItem {
 
 export class CommentItem extends vscode.TreeItem {
   constructor(public readonly comment: Comment) {
-    const label = comment.anchor.label.length > 60
-      ? comment.anchor.label.slice(0, 57) + '...'
-      : comment.anchor.label;
+    const anchorLabel = comment.anchor?.label ?? '';
+    const label = anchorLabel.length > 60
+      ? anchorLabel.slice(0, 57) + '...'
+      : anchorLabel;
 
     const collapsible = comment.replies.length > 0
       ? vscode.TreeItemCollapsibleState.Collapsed

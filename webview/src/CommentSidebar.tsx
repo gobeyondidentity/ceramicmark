@@ -41,7 +41,7 @@ export function CommentSidebar({
   // Group comments by anchor.pageUrl
   const grouped = new Map<string, Comment[]>();
   for (const comment of comments) {
-    const page = comment.anchor.pageUrl || '/';
+    const page = comment.anchor?.pageUrl || '/';
     if (!grouped.has(page)) grouped.set(page, []);
     grouped.get(page)!.push(comment);
   }
@@ -198,9 +198,9 @@ export function CommentSidebar({
                             <span
                               className="text-xs truncate"
                               style={{ color: '#FF6F00', opacity: 0.8 }}
-                              title={comment.anchor.label}
+                              title={comment.anchor?.label}
                             >
-                              {comment.anchor.label}
+                              {comment.anchor?.label}
                             </span>
                             {comment.status === 'resolved' && (
                               <svg
