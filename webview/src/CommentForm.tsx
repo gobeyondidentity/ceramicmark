@@ -23,6 +23,7 @@ export function CommentForm({ anchor, memberNames, onCancel }: CommentFormProps)
       elementId: anchor.elementId,
       testId: anchor.testId,
       text: anchor.text,
+      cssPath: anchor.cssPath,
     };
     const mentions = parseMentions(body);
     vscodeApi.postMessage({ type: 'addComment', anchor: finalAnchor, body: body.trim(), mentions });
