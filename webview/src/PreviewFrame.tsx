@@ -22,6 +22,12 @@ export function PreviewFrame({
 }: PreviewFrameProps): React.ReactElement {
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
+  // Refs so the onLoad handler always sees the latest values without being recreated
+  const focusedCommentRef = useRef(focusedComment);
+  const commentsRef = useRef(comments);
+  useEffect(() => { focusedCommentRef.current = focusedComment; }, [focusedComment]);
+  useEffect(() => { commentsRef.current = comments; }, [comments]);
+
   // Exit comment mode on Escape
   useEffect(() => {
     if (!commentMode) return;
@@ -40,7 +46,7 @@ export function PreviewFrame({
     );
   }, [commentMode]);
 
-  // Send comment markers to iframe whenever comments or page changes
+  // Send markers when comments change while on the same page
   useEffect(() => {
     const markerData = comments.map((c) => ({
       elementId: c.anchor?.elementId,
@@ -53,34 +59,64 @@ export function PreviewFrame({
       { type: 'cm-update-markers', comments: markerData },
       '*',
     );
-  }, [comments, currentPage]);
+  }, [comments]);
 
-  // Navigate to comment's page if not already there
+  // Navigate to the comment's page, or highlight immediately if already there
   useEffect(() => {
     if (!focusedComment || !iframeUrl) return;
     const commentPage = focusedComment.anchor?.pageUrl ?? '/';
-    if (commentPage !== currentPage && iframeRef.current) {
-      iframeRef.current.src = iframeUrl + commentPage;
+    if (commentPage !== currentPage) {
+      // Change src — onLoad will send the highlight once the DOM is ready
+      if (iframeRef.current) {
+        iframeRef.current.src = iframeUrl + commentPage;
+      }
+    } else {
+      // Already on the right page, DOM is ready — highlight now
+      iframeRef.current?.contentWindow?.postMessage(
+        {
+          type: 'cm-highlight-element',
+          elementId: focusedComment.anchor?.elementId,
+          testId: focusedComment.anchor?.testId,
+          tag: focusedComment.anchor?.tag,
+          text: focusedComment.anchor?.text,
+        },
+        '*',
+      );
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focusedComment]); // intentionally excludes currentPage — only navigate on new focus
+  }, [focusedComment]); // intentionally omits currentPage — only re-run on new focus
 
-  // Highlight the element once we're on the right page
-  useEffect(() => {
-    if (!focusedComment) return;
-    const commentPage = focusedComment.anchor?.pageUrl ?? '/';
-    if (currentPage !== commentPage) return; // not there yet, wait for navigation
-    iframeRef.current?.contentWindow?.postMessage(
-      {
-        type: 'cm-highlight-element',
-        elementId: focusedComment.anchor?.elementId,
-        testId: focusedComment.anchor?.testId,
-        tag: focusedComment.anchor?.tag,
-        text: focusedComment.anchor?.text,
-      },
-      '*',
-    );
-  }, [focusedComment, currentPage]);
+  // After every iframe page load the DOM is guaranteed ready.
+  // Re-send markers and, if a comment is focused, its highlight.
+  const handleIframeLoad = () => {
+    const win = iframeRef.current?.contentWindow;
+    console.log('[CM] iframe onLoad fired, focusedComment:', focusedCommentRef.current);
+    if (!win) return;
+
+    const markerData = commentsRef.current.map((c) => ({
+      elementId: c.anchor?.elementId,
+      testId: c.anchor?.testId,
+      tag: c.anchor?.tag,
+      text: c.anchor?.text,
+      status: c.status,
+    }));
+    win.postMessage({ type: 'cm-update-markers', comments: markerData }, '*');
+
+    const fc = focusedCommentRef.current;
+    console.log('[CM] onLoad sending highlight for:', fc?.anchor);
+    if (fc) {
+      win.postMessage(
+        {
+          type: 'cm-highlight-element',
+          elementId: fc.anchor?.elementId,
+          testId: fc.anchor?.testId,
+          tag: fc.anchor?.tag,
+          text: fc.anchor?.text,
+        },
+        '*',
+      );
+    }
+  };
 
   return (
     <div
@@ -94,6 +130,7 @@ export function PreviewFrame({
           className="w-full h-full border-0"
           title="Design Preview"
           sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+          onLoad={handleIframeLoad}
         />
       ) : (
         <div className="flex items-center justify-center h-full">

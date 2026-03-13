@@ -127,26 +127,36 @@ const COMPANION_SCRIPT = `<script>
     }
 
     if (e.data.type === 'cm-highlight-element') {
-      var found = null;
-      if (e.data.elementId) found = document.getElementById(e.data.elementId);
-      if (!found && e.data.testId) found = document.querySelector('[data-testid="' + e.data.testId + '"]');
-      if (!found && e.data.tag && e.data.text) {
-        var els = document.querySelectorAll(e.data.tag);
-        for (var i = 0; i < els.length; i++) {
-          if ((els[i].textContent || '').trim().indexOf(e.data.text) !== -1) { found = els[i]; break; }
+      var hlData = e.data;
+      function findEl() {
+        var f = null;
+        if (hlData.elementId) f = document.getElementById(hlData.elementId);
+        if (!f && hlData.testId) f = document.querySelector('[data-testid="' + hlData.testId + '"]');
+        if (!f && hlData.tag && hlData.text) {
+          var els = document.querySelectorAll(hlData.tag);
+          for (var i = 0; i < els.length; i++) {
+            if ((els[i].textContent || '').trim().indexOf(hlData.text) !== -1) { f = els[i]; break; }
+          }
+        }
+        return f;
+      }
+      function tryHighlight(attemptsLeft) {
+        var found = findEl();
+        if (found) {
+          found.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          var prev = found.style.outline;
+          var prevShadow = found.style.boxShadow;
+          found.style.outline = '2px solid #FF6F00';
+          found.style.boxShadow = '0 0 0 4px rgba(255,111,0,0.25)';
+          setTimeout(function() {
+            found.style.outline = prev;
+            found.style.boxShadow = prevShadow;
+          }, 2000);
+        } else if (attemptsLeft > 0) {
+          setTimeout(function() { tryHighlight(attemptsLeft - 1); }, 300);
         }
       }
-      if (found) {
-        found.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        var prev = found.style.outline;
-        var prevShadow = found.style.boxShadow;
-        found.style.outline = '2px solid #FF6F00';
-        found.style.boxShadow = '0 0 0 4px rgba(255,111,0,0.25)';
-        setTimeout(function() {
-          found.style.outline = prev;
-          found.style.boxShadow = prevShadow;
-        }, 2000);
-      }
+      tryHighlight(6); // retry up to 6×300ms = 1.8s to allow SPA to render
       return;
     }
 

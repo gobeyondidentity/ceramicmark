@@ -47,7 +47,10 @@ export function Toolbar({
               'brightness(0) saturate(100%) invert(42%) sepia(99%) saturate(1200%) hue-rotate(2deg) brightness(103%)',
           }}
           dangerouslySetInnerHTML={{
-            __html: logoSvg.replace(/<svg /, '<svg height="18" '),
+            __html: logoSvg
+            .replace(/\s+width="[^"]*"/, '')
+            .replace(/\s+height="[^"]*"/, '')
+            .replace(/<svg /, '<svg height="18" style="width:auto;height:18px;" '),
           }}
         />
 
