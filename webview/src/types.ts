@@ -11,10 +11,14 @@ export interface Member {
   email: string;
 }
 
-export interface Position {
-  x: number;
-  y: number;
-  scrollY: number;
+export interface ElementAnchor {
+  pageUrl: string;
+  label: string;
+  tag?: string;
+  elementId?: string;
+  testId?: string;
+  text?: string;
+  thumbnail?: string;
 }
 
 export interface CodeRef {
@@ -34,7 +38,7 @@ export interface Comment {
   id: string;
   createdAt: string;
   author: Author;
-  position: Position;
+  anchor: ElementAnchor;
   codeRef?: CodeRef;
   body: string;
   mentions?: string[];
@@ -48,14 +52,16 @@ export type ExtensionMessage =
   | { type: 'commentAdded'; comment: Comment }
   | { type: 'commentUpdated'; comment: Comment }
   | { type: 'commentDeleted'; commentId: string }
-  | { type: 'focusPin'; commentId: string }
+  | { type: 'focusComment'; commentId: string }
   | { type: 'identity'; author: Author }
   | { type: 'loadMembers'; members: Member[] }
-  | { type: 'setBranch'; branch: string };
+  | { type: 'setBranch'; branch: string }
+  | { type: 'proxyReady'; displayUrl: string; proxyUrl: string };
 
 export type WebviewMessage =
   | { type: 'ready' }
-  | { type: 'addComment'; position: Position; body: string; codeRef?: CodeRef; mentions?: string[] }
+  | { type: 'setTargetUrl'; url: string }
+  | { type: 'addComment'; anchor: ElementAnchor; body: string; codeRef?: CodeRef; mentions?: string[] }
   | { type: 'addReply'; commentId: string; body: string; mentions?: string[] }
   | { type: 'resolveComment'; commentId: string }
   | { type: 'reopenComment'; commentId: string }

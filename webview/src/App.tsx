@@ -3,38 +3,46 @@ import logoSvg from './ceramicmark_logo.svg?raw';
 import { vscodeApi } from './vscode.js';
 import { Toolbar } from './Toolbar.js';
 import { PreviewFrame } from './PreviewFrame.js';
-import type { Author, Comment, ExtensionMessage, Member } from './types.js';
+import { CommentSidebar } from './CommentSidebar.js';
+import type { Author, Comment, ElementAnchor, ExtensionMessage, Member } from './types.js';
 
 interface State {
-  previewUrl: string;
+  displayUrl: string;
+  iframeUrl: string;
   comments: Comment[];
   identity: Author | null;
   members: Member[];
   commentMode: boolean;
-  pinsVisible: boolean;
-  focusedPinId: string | null;
+  pendingAnchor: Partial<ElementAnchor> | null;
+  focusedCommentId: string | null;
+  currentPage: string;
   unreadIds: Set<string>;
   currentBranch: string | null;
 }
 
 type Action =
   | { type: 'SET_URL'; url: string }
+  | { type: 'SET_PROXY_URL'; iframeUrl: string }
   | { type: 'SET_IDENTITY'; author: Author }
   | { type: 'LOAD_COMMENTS'; comments: Comment[] }
   | { type: 'ADD_COMMENT'; comment: Comment; identityEmail: string | null }
   | { type: 'UPDATE_COMMENT'; comment: Comment; identityEmail: string | null }
   | { type: 'DELETE_COMMENT'; commentId: string }
   | { type: 'TOGGLE_COMMENT_MODE' }
-  | { type: 'TOGGLE_PINS_VISIBLE' }
-  | { type: 'FOCUS_PIN'; commentId: string }
+  | { type: 'ELEMENT_SELECTED'; anchor: Partial<ElementAnchor> }
+  | { type: 'CANCEL_PENDING' }
+  | { type: 'FOCUS_COMMENT'; commentId: string }
   | { type: 'LOAD_MEMBERS'; members: Member[] }
   | { type: 'MARK_READ'; commentId: string }
-  | { type: 'SET_BRANCH'; branch: string };
+  | { type: 'SET_BRANCH'; branch: string }
+  | { type: 'IFRAME_NAVIGATED'; pathname: string };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'SET_URL':
-      return { ...state, previewUrl: action.url };
+      return { ...state, displayUrl: action.url, iframeUrl: '' };
+    case 'SET_PROXY_URL':
+      return { ...state, iframeUrl: action.iframeUrl };
     case 'SET_IDENTITY':
       return { ...state, identity: action.author };
     case 'LOAD_COMMENTS':
@@ -44,7 +52,13 @@ function reducer(state: State, action: Action): State {
       if (action.identityEmail && action.comment.author.email !== action.identityEmail) {
         unreadIds.add(action.comment.id);
       }
-      return { ...state, comments: [...state.comments, action.comment], commentMode: false, unreadIds };
+      return {
+        ...state,
+        comments: [...state.comments, action.comment],
+        commentMode: false,
+        pendingAnchor: null,
+        unreadIds,
+      };
     }
     case 'UPDATE_COMMENT': {
       const unreadIds = new Set(state.unreadIds);
@@ -54,18 +68,20 @@ function reducer(state: State, action: Action): State {
       }
       return {
         ...state,
-        comments: state.comments.map((c) => c.id === action.comment.id ? action.comment : c),
+        comments: state.comments.map((c) => (c.id === action.comment.id ? action.comment : c)),
         unreadIds,
       };
     }
     case 'DELETE_COMMENT':
       return { ...state, comments: state.comments.filter((c) => c.id !== action.commentId) };
     case 'TOGGLE_COMMENT_MODE':
-      return { ...state, commentMode: !state.commentMode };
-    case 'TOGGLE_PINS_VISIBLE':
-      return { ...state, pinsVisible: !state.pinsVisible };
-    case 'FOCUS_PIN':
-      return { ...state, focusedPinId: action.commentId, pinsVisible: true };
+      return { ...state, commentMode: !state.commentMode, pendingAnchor: null };
+    case 'ELEMENT_SELECTED':
+      return { ...state, pendingAnchor: action.anchor };
+    case 'CANCEL_PENDING':
+      return { ...state, pendingAnchor: null };
+    case 'FOCUS_COMMENT':
+      return { ...state, focusedCommentId: action.commentId };
     case 'LOAD_MEMBERS':
       return { ...state, members: action.members };
     case 'MARK_READ': {
@@ -75,19 +91,23 @@ function reducer(state: State, action: Action): State {
     }
     case 'SET_BRANCH':
       return { ...state, currentBranch: action.branch };
+    case 'IFRAME_NAVIGATED':
+      return { ...state, currentPage: action.pathname };
     default:
       return state;
   }
 }
 
 const initialState: State = {
-  previewUrl: '',
+  displayUrl: '',
+  iframeUrl: '',
   comments: [],
   identity: null,
   members: [],
   commentMode: false,
-  pinsVisible: true,
-  focusedPinId: null,
+  pendingAnchor: null,
+  focusedCommentId: null,
+  currentPage: '/',
   unreadIds: new Set(),
   currentBranch: null,
 };
@@ -104,32 +124,64 @@ export function App(): React.ReactElement {
     vscodeApi.postMessage({ type: 'ready' });
 
     const handler = (event: MessageEvent) => {
-      const message = event.data as ExtensionMessage;
-      switch (message.type) {
+      const message = event.data;
+      if (!message || typeof message.type !== 'string') return;
+
+      // Messages from the iframe companion script
+      if (message.type === 'cm-element-selected') {
+        dispatch({
+          type: 'ELEMENT_SELECTED',
+          anchor: {
+            pageUrl: message.pathname,
+            label: message.label,
+            tag: message.tag,
+            elementId: message.elementId || undefined,
+            testId: message.testId || undefined,
+            text: message.text || undefined,
+          },
+        });
+        return;
+      }
+      if (message.type === 'cm-navigate') {
+        try {
+          const parsed = new URL(message.pathname, 'http://x');
+          dispatch({ type: 'IFRAME_NAVIGATED', pathname: parsed.pathname + parsed.search + parsed.hash });
+        } catch {
+          dispatch({ type: 'IFRAME_NAVIGATED', pathname: message.pathname });
+        }
+        return;
+      }
+
+      // Messages from the extension host
+      const extMsg = message as ExtensionMessage;
+      switch (extMsg.type) {
         case 'identity':
-          identityRef.current = message.author.email;
-          dispatch({ type: 'SET_IDENTITY', author: message.author });
+          identityRef.current = extMsg.author.email;
+          dispatch({ type: 'SET_IDENTITY', author: extMsg.author });
           break;
         case 'loadComments':
-          dispatch({ type: 'LOAD_COMMENTS', comments: message.comments });
+          dispatch({ type: 'LOAD_COMMENTS', comments: extMsg.comments });
           break;
         case 'commentAdded':
-          dispatch({ type: 'ADD_COMMENT', comment: message.comment, identityEmail: identityRef.current });
+          dispatch({ type: 'ADD_COMMENT', comment: extMsg.comment, identityEmail: identityRef.current });
           break;
         case 'commentUpdated':
-          dispatch({ type: 'UPDATE_COMMENT', comment: message.comment, identityEmail: identityRef.current });
+          dispatch({ type: 'UPDATE_COMMENT', comment: extMsg.comment, identityEmail: identityRef.current });
           break;
         case 'commentDeleted':
-          dispatch({ type: 'DELETE_COMMENT', commentId: message.commentId });
+          dispatch({ type: 'DELETE_COMMENT', commentId: extMsg.commentId });
           break;
-        case 'focusPin':
-          dispatch({ type: 'FOCUS_PIN', commentId: message.commentId });
+        case 'focusComment':
+          dispatch({ type: 'FOCUS_COMMENT', commentId: extMsg.commentId });
           break;
         case 'setBranch':
-          dispatch({ type: 'SET_BRANCH', branch: message.branch });
+          dispatch({ type: 'SET_BRANCH', branch: extMsg.branch });
           break;
         case 'loadMembers':
-          dispatch({ type: 'LOAD_MEMBERS', members: message.members });
+          dispatch({ type: 'LOAD_MEMBERS', members: extMsg.members });
+          break;
+        case 'proxyReady':
+          dispatch({ type: 'SET_PROXY_URL', iframeUrl: extMsg.proxyUrl });
           break;
       }
     };
@@ -138,35 +190,52 @@ export function App(): React.ReactElement {
     return () => window.removeEventListener('message', handler);
   }, []);
 
-  const memberNames = state.members.map((m) => m.name);
+  const handleUrlChange = (url: string) => {
+    dispatch({ type: 'SET_URL', url });
+    vscodeApi.postMessage({ type: 'setTargetUrl', url });
+  };
 
-  if (!state.previewUrl) {
-    return <SplashScreen onUrlChange={(url) => dispatch({ type: 'SET_URL', url })} />;
+  const memberNames = state.members.map((m) => m.name);
+  const focusedComment = state.focusedCommentId
+    ? (state.comments.find((c) => c.id === state.focusedCommentId) ?? null)
+    : null;
+
+  if (!state.displayUrl) {
+    return <SplashScreen onUrlChange={handleUrlChange} />;
   }
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
-      <Toolbar
-        previewUrl={state.previewUrl}
-        commentMode={state.commentMode}
-        pinsVisible={state.pinsVisible}
-        currentBranch={state.currentBranch}
-        onUrlChange={(url) => dispatch({ type: 'SET_URL', url })}
-        onToggleCommentMode={() => dispatch({ type: 'TOGGLE_COMMENT_MODE' })}
-        onTogglePinsVisible={() => dispatch({ type: 'TOGGLE_PINS_VISIBLE' })}
-      />
-      <PreviewFrame
-        url={state.previewUrl}
+    <div className="flex flex-row h-screen overflow-hidden">
+      {/* Left: toolbar + preview iframe */}
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+        <Toolbar
+          previewUrl={state.displayUrl}
+          commentMode={state.commentMode}
+          currentBranch={state.currentBranch}
+          onUrlChange={handleUrlChange}
+          onToggleCommentMode={() => dispatch({ type: 'TOGGLE_COMMENT_MODE' })}
+        />
+        <PreviewFrame
+          iframeUrl={state.iframeUrl}
+          displayUrl={state.displayUrl}
+          commentMode={state.commentMode}
+          focusedComment={focusedComment}
+          onCommentModeExit={() => dispatch({ type: 'TOGGLE_COMMENT_MODE' })}
+        />
+      </div>
+
+      {/* Right: comments sidebar */}
+      <CommentSidebar
         comments={state.comments}
-        commentMode={state.commentMode}
-        pinsVisible={state.pinsVisible}
-        focusedPinId={state.focusedPinId}
+        pendingAnchor={state.pendingAnchor}
         memberNames={memberNames}
-        unreadIds={state.unreadIds}
         currentBranch={state.currentBranch}
-        onCommentModeExit={() => dispatch({ type: 'TOGGLE_COMMENT_MODE' })}
-        onClearFocus={() => dispatch({ type: 'FOCUS_PIN', commentId: '' })}
-        onMarkRead={(commentId) => dispatch({ type: 'MARK_READ', commentId })}
+        currentPage={state.currentPage}
+        focusedCommentId={state.focusedCommentId}
+        unreadIds={state.unreadIds}
+        onCancelPending={() => dispatch({ type: 'CANCEL_PENDING' })}
+        onFocusComment={(id) => dispatch({ type: 'FOCUS_COMMENT', commentId: id })}
+        onMarkRead={(id) => dispatch({ type: 'MARK_READ', commentId: id })}
       />
     </div>
   );
@@ -210,7 +279,7 @@ function SplashScreen({ onUrlChange }: { onUrlChange: (url: string) => void }): 
         />
       </form>
       <p className="text-xs text-center w-80" style={{ color: 'rgba(255,255,255,0.6)' }}>
-        An extension that lets product builders leave visual, pin-based comments directly on a live localhost preview — Run a dev server, enter your localhost, Collaborate.
+        An extension that lets product builders leave visual comments directly on a live localhost preview — Run a dev server, enter your localhost, Collaborate.
       </p>
     </div>
   );

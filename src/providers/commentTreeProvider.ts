@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import type { ICommentStore } from '../store/ICommentStore.js';
 import type { Comment, Reply } from '../types.js';
 
-type TreeNode = MentionedYouItem | MentionedCommentItem | AuthorItem | CommentItem | ReplyItem;
+type TreeNode = MentionedYouItem | MentionedCommentItem | PageItem | CommentItem | ReplyItem;
 
 // ─── Mentioned You ───────────────────────────────────────────────────────────
 
@@ -30,33 +30,33 @@ export class MentionedCommentItem extends vscode.TreeItem {
     this.contextValue = 'mentionedComment';
 
     this.command = {
-      command: 'ceramicMark.focusPin',
-      title: 'Focus pin',
+      command: 'ceramicMark.focusComment',
+      title: 'Focus comment',
       arguments: [comment.id],
     };
   }
 }
 
-// ─── Author groups ────────────────────────────────────────────────────────────
+// ─── Page groups ──────────────────────────────────────────────────────────────
 
-export class AuthorItem extends vscode.TreeItem {
+export class PageItem extends vscode.TreeItem {
   constructor(
-    public readonly authorName: string,
+    public readonly pageUrl: string,
     public readonly comments: Comment[],
   ) {
-    super(authorName, vscode.TreeItemCollapsibleState.Expanded);
+    super(pageUrl, vscode.TreeItemCollapsibleState.Expanded);
     const count = comments.length;
     this.description = `${count} comment${count !== 1 ? 's' : ''}`;
-    this.iconPath = new vscode.ThemeIcon('account');
-    this.contextValue = 'author';
+    this.iconPath = new vscode.ThemeIcon('link');
+    this.contextValue = 'page';
   }
 }
 
 export class CommentItem extends vscode.TreeItem {
   constructor(public readonly comment: Comment) {
-    const label = comment.body.length > 60
-      ? comment.body.slice(0, 57) + '...'
-      : comment.body;
+    const label = comment.anchor.label.length > 60
+      ? comment.anchor.label.slice(0, 57) + '...'
+      : comment.anchor.label;
 
     const collapsible = comment.replies.length > 0
       ? vscode.TreeItemCollapsibleState.Collapsed
@@ -67,7 +67,7 @@ export class CommentItem extends vscode.TreeItem {
     const replyCount = comment.replies.length;
     this.description = replyCount > 0
       ? `${replyCount} repl${replyCount !== 1 ? 'ies' : 'y'}`
-      : undefined;
+      : comment.author.name;
     this.tooltip = `${comment.author.name}: ${comment.body}`;
     this.contextValue = comment.status === 'resolved' ? 'resolvedComment' : 'openComment';
     this.iconPath = comment.status === 'resolved'
@@ -75,8 +75,8 @@ export class CommentItem extends vscode.TreeItem {
       : new vscode.ThemeIcon('comment');
 
     this.command = {
-      command: 'ceramicMark.focusPin',
-      title: 'Focus pin',
+      command: 'ceramicMark.focusComment',
+      title: 'Focus comment',
       arguments: [comment.id],
     };
   }
@@ -96,8 +96,8 @@ export class ReplyItem extends vscode.TreeItem {
     this.contextValue = 'reply';
 
     this.command = {
-      command: 'ceramicMark.focusPin',
-      title: 'Focus pin',
+      command: 'ceramicMark.focusComment',
+      title: 'Focus comment',
       arguments: [parentCommentId],
     };
   }
@@ -144,18 +144,18 @@ export class CommentTreeProvider implements vscode.TreeDataProvider<TreeNode> {
         }
       }
 
-      // Author groups, sorted alphabetically
-      const byAuthor = new Map<string, Comment[]>();
+      // Page groups, sorted alphabetically
+      const byPage = new Map<string, Comment[]>();
       for (const comment of comments) {
-        const name = comment.author.name;
-        if (!byAuthor.has(name)) byAuthor.set(name, []);
-        byAuthor.get(name)!.push(comment);
+        const page = comment.anchor.pageUrl || '/';
+        if (!byPage.has(page)) byPage.set(page, []);
+        byPage.get(page)!.push(comment);
       }
-      const authorItems = [...byAuthor.entries()]
+      const pageItems = [...byPage.entries()]
         .sort(([a], [b]) => a.localeCompare(b))
-        .map(([name, authorComments]) => new AuthorItem(name, authorComments));
+        .map(([page, pageComments]) => new PageItem(page, pageComments));
 
-      return [...result, ...authorItems];
+      return [...result, ...pageItems];
     }
 
     // "Mentioned You" children
@@ -163,8 +163,8 @@ export class CommentTreeProvider implements vscode.TreeDataProvider<TreeNode> {
       return element.mentionedComments.map((c) => new MentionedCommentItem(c));
     }
 
-    // Author children — open first, then resolved, newest first within each
-    if (element instanceof AuthorItem) {
+    // Page children — open first, then resolved, newest first within each
+    if (element instanceof PageItem) {
       return [...element.comments]
         .sort((a, b) => {
           if (a.status !== b.status) return a.status === 'open' ? -1 : 1;
