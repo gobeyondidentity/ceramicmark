@@ -40,6 +40,7 @@ const COMPANION_SCRIPT = `<script>
           if ((els[j].textContent || '').trim().indexOf(a.text) !== -1) { found = els[j]; break; }
         }
       }
+      if (!found && a.cssPath) { try { found = document.querySelector(a.cssPath); } catch(e) {} }
       if (!found || found === document.body || found === document.documentElement) continue;
       var badge = document.createElement('span');
       badge.setAttribute('data-cm-badge', '1');
@@ -51,6 +52,25 @@ const COMPANION_SCRIPT = `<script>
       found.appendChild(badge);
       _cmMarkers.push({ el: found, badge: badge, prevPos: prevPos, wasStatic: computedPos === 'static' });
     }
+  }
+
+  function getCssPath(el) {
+    var path = [];
+    var current = el;
+    while (current && current !== document.body && current !== document.documentElement) {
+      var tag = current.tagName.toLowerCase();
+      var parent = current.parentElement;
+      if (parent) {
+        var siblings = parent.querySelectorAll(':scope > ' + tag);
+        if (siblings.length > 1) {
+          var idx = Array.prototype.indexOf.call(siblings, current) + 1;
+          tag += ':nth-of-type(' + idx + ')';
+        }
+      }
+      path.unshift(tag);
+      current = current.parentElement;
+    }
+    return path.join(' > ');
   }
 
   function buildLabel(el) {
@@ -113,6 +133,7 @@ const COMPANION_SCRIPT = `<script>
       elementId: el.id || undefined,
       testId: (el.dataset && el.dataset.testid) || undefined,
       text: (el.textContent || '').trim().replace(/\\s+/g,' ').slice(0, 40) || undefined,
+      cssPath: getCssPath(el),
       pathname: window.location.pathname + window.location.search + window.location.hash,
     }, '*');
   }, true);
@@ -138,6 +159,7 @@ const COMPANION_SCRIPT = `<script>
             if ((els[i].textContent || '').trim().indexOf(hlData.text) !== -1) { f = els[i]; break; }
           }
         }
+        if (!f && hlData.cssPath) { try { f = document.querySelector(hlData.cssPath); } catch(e) {} }
         return f;
       }
       function tryHighlight(attemptsLeft) {

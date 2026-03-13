@@ -26,6 +26,8 @@ export interface ElementAnchor {
   testId?: string;
   /** visible text content (truncated) */
   text?: string;
+  /** CSS path fallback for elements with no id/testId/text */
+  cssPath?: string;
   /** workspace-relative path to screenshot thumbnail, if captured */
   thumbnail?: string;
 }

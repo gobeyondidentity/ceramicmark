@@ -138,6 +138,7 @@ export function App(): React.ReactElement {
             elementId: message.elementId || undefined,
             testId: message.testId || undefined,
             text: message.text || undefined,
+            cssPath: message.cssPath || undefined,
           },
         });
         return;

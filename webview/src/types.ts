@@ -18,6 +18,7 @@ export interface ElementAnchor {
   elementId?: string;
   testId?: string;
   text?: string;
+  cssPath?: string;
   thumbnail?: string;
 }
 

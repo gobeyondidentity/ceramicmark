@@ -53,6 +53,7 @@ export function PreviewFrame({
       testId: c.anchor?.testId,
       tag: c.anchor?.tag,
       text: c.anchor?.text,
+      cssPath: c.anchor?.cssPath,
       status: c.status,
     }));
     iframeRef.current?.contentWindow?.postMessage(
@@ -63,15 +64,19 @@ export function PreviewFrame({
 
   // Navigate to the comment's page, or highlight immediately if already there
   useEffect(() => {
+    console.log('[CM] focusedComment effect fired', { focusedComment, iframeUrl, currentPage });
     if (!focusedComment || !iframeUrl) return;
     const commentPage = focusedComment.anchor?.pageUrl ?? '/';
+    console.log('[CM] commentPage:', commentPage, 'currentPage:', currentPage);
     if (commentPage !== currentPage) {
       // Change src — onLoad will send the highlight once the DOM is ready
+      console.log('[CM] navigating iframe to', iframeUrl + commentPage);
       if (iframeRef.current) {
         iframeRef.current.src = iframeUrl + commentPage;
       }
     } else {
       // Already on the right page, DOM is ready — highlight now
+      console.log('[CM] same page, sending highlight now', focusedComment.anchor);
       iframeRef.current?.contentWindow?.postMessage(
         {
           type: 'cm-highlight-element',
@@ -79,6 +84,7 @@ export function PreviewFrame({
           testId: focusedComment.anchor?.testId,
           tag: focusedComment.anchor?.tag,
           text: focusedComment.anchor?.text,
+          cssPath: focusedComment.anchor?.cssPath,
         },
         '*',
       );
@@ -98,6 +104,7 @@ export function PreviewFrame({
       testId: c.anchor?.testId,
       tag: c.anchor?.tag,
       text: c.anchor?.text,
+      cssPath: c.anchor?.cssPath,
       status: c.status,
     }));
     win.postMessage({ type: 'cm-update-markers', comments: markerData }, '*');
@@ -112,6 +119,7 @@ export function PreviewFrame({
           testId: fc.anchor?.testId,
           tag: fc.anchor?.tag,
           text: fc.anchor?.text,
+          cssPath: fc.anchor?.cssPath,
         },
         '*',
       );
