@@ -6,6 +6,7 @@ interface PreviewFrameProps {
   displayUrl: string;
   commentMode: boolean;
   focusedComment: Comment | null;
+  currentPage: string;
   onCommentModeExit: () => void;
 }
 
@@ -14,6 +15,7 @@ export function PreviewFrame({
   displayUrl,
   commentMode,
   focusedComment,
+  currentPage,
   onCommentModeExit,
 }: PreviewFrameProps): React.ReactElement {
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -36,20 +38,32 @@ export function PreviewFrame({
     );
   }, [commentMode]);
 
-  // Highlight the element when a comment is focused
+  // Navigate to comment's page if not already there
+  useEffect(() => {
+    if (!focusedComment || !iframeUrl) return;
+    const commentPage = focusedComment.anchor?.pageUrl ?? '/';
+    if (commentPage !== currentPage && iframeRef.current) {
+      iframeRef.current.src = iframeUrl + commentPage;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusedComment]); // intentionally excludes currentPage — only navigate on new focus
+
+  // Highlight the element once we're on the right page
   useEffect(() => {
     if (!focusedComment) return;
+    const commentPage = focusedComment.anchor?.pageUrl ?? '/';
+    if (currentPage !== commentPage) return; // not there yet, wait for navigation
     iframeRef.current?.contentWindow?.postMessage(
       {
         type: 'cm-highlight-element',
-        elementId: focusedComment.anchor.elementId,
-        testId: focusedComment.anchor.testId,
-        tag: focusedComment.anchor.tag,
-        text: focusedComment.anchor.text,
+        elementId: focusedComment.anchor?.elementId,
+        testId: focusedComment.anchor?.testId,
+        tag: focusedComment.anchor?.tag,
+        text: focusedComment.anchor?.text,
       },
       '*',
     );
-  }, [focusedComment]);
+  }, [focusedComment, currentPage]);
 
   return (
     <div

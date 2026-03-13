@@ -220,6 +220,7 @@ export function App(): React.ReactElement {
           displayUrl={state.displayUrl}
           commentMode={state.commentMode}
           focusedComment={focusedComment}
+          currentPage={state.currentPage}
           onCommentModeExit={() => dispatch({ type: 'TOGGLE_COMMENT_MODE' })}
         />
       </div>
