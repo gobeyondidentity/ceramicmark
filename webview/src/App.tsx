@@ -17,6 +17,7 @@ interface State {
   focusedCommentId: string | null;
   focusCommentTs: number;
   currentPage: string;
+  currentTitle: string;
   iframeReadyAt: number;
   unreadIds: Set<string>;
   currentBranch: string | null;
@@ -38,7 +39,7 @@ type Action =
   | { type: 'LOAD_MEMBERS'; members: Member[] }
   | { type: 'MARK_READ'; commentId: string }
   | { type: 'SET_BRANCH'; branch: string }
-  | { type: 'IFRAME_NAVIGATED'; pathname: string }
+  | { type: 'IFRAME_NAVIGATED'; pathname: string; title?: string }
   | { type: 'TOGGLE_SIDEBAR' }
   | { type: 'SET_SIDEBAR'; open: boolean };
 
@@ -97,7 +98,7 @@ function reducer(state: State, action: Action): State {
     case 'SET_BRANCH':
       return { ...state, currentBranch: action.branch };
     case 'IFRAME_NAVIGATED':
-      return { ...state, currentPage: action.pathname, iframeReadyAt: Date.now() };
+      return { ...state, currentPage: action.pathname, currentTitle: action.title ?? state.currentTitle, iframeReadyAt: Date.now() };
     case 'TOGGLE_SIDEBAR':
       return { ...state, sidebarOpen: !state.sidebarOpen };
     case 'SET_SIDEBAR':
@@ -118,6 +119,7 @@ const initialState: State = {
   focusedCommentId: null,
   focusCommentTs: 0,
   currentPage: '/',
+  currentTitle: '',
   iframeReadyAt: 0,
   unreadIds: new Set(),
   currentBranch: null,
@@ -147,6 +149,7 @@ export function App(): React.ReactElement {
           type: 'ELEMENT_SELECTED',
           anchor: {
             pageUrl: message.pathname,
+            pageTitle: message.title || undefined,
             label: message.label,
             tag: message.tag,
             elementId: message.elementId || undefined,
@@ -165,9 +168,9 @@ export function App(): React.ReactElement {
         try {
           const parsed = new URL(message.pathname, 'http://x');
           const page = parsed.pathname + parsed.search + parsed.hash;
-          dispatch({ type: 'IFRAME_NAVIGATED', pathname: page });
+          dispatch({ type: 'IFRAME_NAVIGATED', pathname: page, title: message.title });
         } catch {
-          dispatch({ type: 'IFRAME_NAVIGATED', pathname: message.pathname });
+          dispatch({ type: 'IFRAME_NAVIGATED', pathname: message.pathname, title: message.title });
         }
         return;
       }
@@ -271,6 +274,7 @@ export function App(): React.ReactElement {
           focusedComment={focusedComment}
           focusCommentTs={state.focusCommentTs}
           currentPage={state.currentPage}
+          currentTitle={state.currentTitle}
           iframeReadyAt={state.iframeReadyAt}
           comments={state.comments}
           onCommentModeExit={() => dispatch({ type: 'TOGGLE_COMMENT_MODE' })}

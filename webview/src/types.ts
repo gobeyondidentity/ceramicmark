@@ -13,6 +13,9 @@ export interface Member {
 
 export interface ElementAnchor {
   pageUrl: string;
+  /** Document title at the time of comment placement — used as a page identity fallback
+   *  when the app uses React-state navigation (URL stays at '/') */
+  pageTitle?: string;
   label: string;
   tag?: string;
   elementId?: string;

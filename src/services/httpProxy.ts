@@ -238,6 +238,7 @@ const COMPANION_SCRIPT = `<script>
       text: (el.textContent || '').trim().replace(/\\s+/g,' ').slice(0, 40) || undefined,
       cssPath: getCssPath(el),
       pathname: window.location.pathname + window.location.search + window.location.hash,
+      title: document.title,
     }, '*');
   }, true);
 
@@ -288,6 +289,7 @@ const COMPANION_SCRIPT = `<script>
     window.parent.postMessage({
       type: 'cm-navigate',
       pathname: window.location.pathname + window.location.search + window.location.hash,
+      title: document.title,
     }, '*');
   }
 
@@ -303,6 +305,17 @@ const COMPANION_SCRIPT = `<script>
   history.replaceState = function() { _replace.apply(history, arguments); notifyNavDeferred(); };
   window.addEventListener('popstate', notifyNavDeferred);
   window.addEventListener('hashchange', notifyNavDeferred);
+
+  // Poll document.title every 500ms — for React-state apps where the URL never changes
+  // but the title updates when the user switches sections/views.
+  var _cmLastTitle = document.title;
+  setInterval(function() {
+    var t = document.title;
+    if (t !== _cmLastTitle) {
+      _cmLastTitle = t;
+      notifyNavDeferred();
+    }
+  }, 500);
 
   // For initial MPA page load: wait until DOMContentLoaded so body elements exist
   if (document.readyState === 'loading') {

@@ -8,6 +8,7 @@ interface PreviewFrameProps {
   focusedComment: Comment | null;
   focusCommentTs: number;
   currentPage: string;
+  currentTitle: string;
   iframeReadyAt: number;
   comments: Comment[];
   onCommentModeExit: () => void;
@@ -20,6 +21,7 @@ export function PreviewFrame({
   focusedComment,
   focusCommentTs,
   currentPage,
+  currentTitle,
   iframeReadyAt,
   comments,
   onCommentModeExit,
@@ -30,9 +32,11 @@ export function PreviewFrame({
   const focusedCommentRef = useRef(focusedComment);
   const commentsRef = useRef(comments);
   const currentPageRef = useRef(currentPage);
+  const currentTitleRef = useRef(currentTitle);
   useEffect(() => { focusedCommentRef.current = focusedComment; }, [focusedComment]);
   useEffect(() => { commentsRef.current = comments; }, [comments]);
   useEffect(() => { currentPageRef.current = currentPage; }, [currentPage]);
+  useEffect(() => { currentTitleRef.current = currentTitle; }, [currentTitle]);
 
   // Exit comment mode on Escape
   useEffect(() => {
@@ -75,7 +79,15 @@ export function PreviewFrame({
   useEffect(() => {
     if (!iframeReadyAt) return;
     const markerData = commentsRef.current
-      .filter((c) => (c.anchor?.pageUrl ?? '/') === currentPageRef.current)
+      .filter((c) => {
+        if ((c.anchor?.pageUrl ?? '/') !== currentPageRef.current) return false;
+        // If the comment has a pageTitle and we know the current title, only show it on the
+        // matching view (handles React-state apps where URL stays at '/' across all sections).
+        const commentTitle = c.anchor?.pageTitle;
+        const curTitle = currentTitleRef.current;
+        if (commentTitle && curTitle && commentTitle !== curTitle) return false;
+        return true;
+      })
       .map((c) => ({
         id: c.id,
         elementId: c.anchor?.elementId,

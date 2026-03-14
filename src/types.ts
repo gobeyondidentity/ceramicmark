@@ -16,6 +16,9 @@ export interface MembersFile {
 export interface ElementAnchor {
   /** Page pathname where the comment was placed, e.g. '/dashboard' */
   pageUrl: string;
+  /** Document title at the time of comment placement — used as a page identity fallback
+   *  when the app uses React-state navigation (URL stays at '/') */
+  pageTitle?: string;
   /** Human-readable label auto-generated from element: "Submit button · #submit-btn" */
   label: string;
   /** tag name of the clicked element */
