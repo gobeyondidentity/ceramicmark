@@ -62,6 +62,17 @@ Launch for development: `Fn+F5` in VS Code opens an Extension Development Host.
 - Always use `var(--vscode-editor-font-family, 'SF Mono', Consolas, 'Cascadia Code', Menlo, monospace)` — this is already set globally in `webview/src/index.css` and inherited everywhere.
 - Do not set a custom `font-family` on individual elements. Do not introduce any other font.
 
+### Accessibility
+- This tool must conform to **WCAG 2.0 Level AA** at all times.
+- Every UI addition must include:
+  - Accessible names for all interactive elements (`aria-label`, `<label>`, or visible text).
+  - `aria-hidden="true"` on all purely decorative elements (icons, logos).
+  - Correct semantic roles: use `<button>` for clickable cards/actions, `<h1>`–`<h6>` for headings, `role="listbox"` / `role="option"` for custom dropdowns.
+  - `aria-pressed` on toggle buttons, `aria-expanded` on disclosure widgets.
+  - Sufficient color contrast: text on `#FF6F00` backgrounds must use the dark VS Code title-bar color; never pair low-opacity text with a low-contrast background.
+  - Focus-visible indicators (do not suppress `:focus-visible` outlines).
+- **Claude must proactively flag any request that would result in a WCAG 2.0 AA violation** before implementing it, and suggest a compliant alternative.
+
 ## Key conventions
 
 - **Types must stay in sync**: `src/types.ts` is the source of truth. `webview/src/types.ts` is a manual mirror — update both when adding message types.
