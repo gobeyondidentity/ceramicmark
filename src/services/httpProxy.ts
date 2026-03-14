@@ -367,6 +367,7 @@ const BLOCKED_HEADERS = new Set([
   'x-content-type-options',
   'content-length',
   'transfer-encoding',
+  'set-cookie',
 ]);
 
 export class HttpProxy {
@@ -450,6 +451,14 @@ export class HttpProxy {
       } else {
         res.writeHead(proxyRes.statusCode ?? 200, outHeaders);
         proxyRes.pipe(res, { end: true });
+      }
+    });
+
+    proxyReq.setTimeout(15000, () => {
+      proxyReq.destroy();
+      if (!res.headersSent) {
+        res.writeHead(504, { 'content-type': 'text/plain' });
+        res.end('Gateway Timeout');
       }
     });
 

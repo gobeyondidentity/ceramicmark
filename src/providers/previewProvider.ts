@@ -67,6 +67,9 @@ export class PreviewProvider {
       }
 
       case 'setTargetUrl': {
+        let parsed: URL;
+        try { parsed = new URL(message.url); } catch { break; }
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') break;
         const displayUrl = message.url;
         if (!this.proxy) {
           this.proxy = new HttpProxy(displayUrl, this.outputChannel);

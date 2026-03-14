@@ -136,6 +136,7 @@ export function App(): React.ReactElement {
   const isMounted = useRef(false);
   const identityRef = useRef<string | null>(null);
   const hasUrlRef = useRef(false);
+  const proxyOriginRef = useRef<string | null>(null);
   useEffect(() => { hasUrlRef.current = !!state.displayUrl; }, [state.displayUrl]);
 
   useEffect(() => {
@@ -148,7 +149,12 @@ export function App(): React.ReactElement {
       const message = event.data;
       if (!message || typeof message.type !== 'string') return;
 
-      // Messages from the iframe companion script
+      // Messages from the iframe companion script — validate origin
+      const isCmIframeMessage = (message.type as string).startsWith('cm-');
+      if (isCmIframeMessage) {
+        if (!proxyOriginRef.current || event.origin !== proxyOriginRef.current) return;
+      }
+
       if (message.type === 'cm-connection-failed') {
         dispatch({ type: 'CONNECTION_FAILED' });
         return;
@@ -214,6 +220,7 @@ export function App(): React.ReactElement {
           dispatch({ type: 'LOAD_MEMBERS', members: extMsg.members });
           break;
         case 'proxyReady':
+          proxyOriginRef.current = new URL(extMsg.proxyUrl).origin;
           dispatch({ type: 'SET_PROXY_URL', iframeUrl: extMsg.proxyUrl });
           break;
         case 'toggleCommentMode':
