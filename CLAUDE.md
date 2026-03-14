@@ -73,6 +73,14 @@ Launch for development: `Fn+F5` in VS Code opens an Extension Development Host.
   - Focus-visible indicators (do not suppress `:focus-visible` outlines).
 - **Claude must proactively flag any request that would result in a WCAG 2.0 AA violation** before implementing it, and suggest a compliant alternative.
 
+### Responsiveness
+- The webview runs inside a VS Code panel that users resize freely. `window.innerWidth` reflects the actual panel width, so standard CSS media queries and Tailwind breakpoints work correctly.
+- **One breakpoint only: `sm` (640px).** Below 640px is "narrow" (split-editor or small panel); at or above 640px is "normal".
+- **Never use fixed pixel widths on layout-level elements.** Inputs, forms, and containers that span significant width must use flex (`flex-1`, `min-w-0`, `w-full`) so they shrink with the panel. Only icons and small fixed-size UI atoms (e.g. avatar, badge) may use fixed px dimensions.
+- **Sidebar** (`CommentSidebar`) is the only major fixed-width element (280px). It is controlled by the `sidebarOpen` state in `App.tsx` and auto-collapses below 640px via `window.matchMedia('(max-width: 639px)')`. Any new panel-level fixed-width column must follow the same pattern.
+- **Toolbar button labels** that would crowd the toolbar at narrow widths must use `hidden sm:inline` so only the icon (with a descriptive `aria-label`) remains visible below 640px.
+- **Claude must flag any new UI that introduces a fixed pixel width on a flex container, or that would overflow/clip below 640px**, and suggest a fluid alternative before implementing.
+
 ## Key conventions
 
 - **Types must stay in sync**: `src/types.ts` is the source of truth. `webview/src/types.ts` is a manual mirror — update both when adding message types.
