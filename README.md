@@ -1,8 +1,8 @@
 # CeramicMark
 
-An extension that lets product builders leave visual, pin-based comments directly on a live localhost preview — inside VS Code and Cursor.
+An extension that lets product builders leave visual comments directly on a live localhost preview — inside VS Code and Cursor.
 
-Drop threaded comment pins directly onto a running app preview. No switching tools, no screenshots, no Slack threads with "the button on the left... no the other one."
+Click any element in the running app to anchor a comment to it. No switching tools, no screenshots, no Slack threads with "the button on the left... no the other one."
 
 ---
 
@@ -12,8 +12,9 @@ Drop threaded comment pins directly onto a running app preview. No switching too
 2. Start your dev server as normal (`npm run dev`, etc.)
 3. Open the CeramicMark panel from the activity bar
 4. On the splash screen, enter your localhost URL (e.g. `http://localhost:3000`) and press Enter
-5. Click **Comment**, then click anywhere on the preview to drop a pin
-6. Your teammate pulls the repo, opens CeramicMark, and sees your pins
+5. Press **C** (or click the Comment button) to enter comment mode — the preview gets an orange border
+6. Click any element in the preview to anchor a comment to it
+7. Your teammate pulls the repo, opens CeramicMark, and sees your comment markers on the same elements
 
 Comments are stored in `.ide-comments/comments.json` inside your project — they travel with the repo, so no account or external service is needed.
 
@@ -21,13 +22,17 @@ Comments are stored in `.ide-comments/comments.json` inside your project — the
 
 ## Features
 
-- **Visual pin-based comments** — click anywhere on the live preview to drop a comment pin
-- **Threaded replies** — reply to any comment directly in the pin popover
-- **Resolve / reopen** — mark comments as resolved when the issue is addressed
+- **Element-anchored comments** — click any element in the live preview to attach a comment directly to it; a marker badge appears on the element for all teammates
+- **Smart element labels** — comments are labeled using `aria-label`, placeholder text, alt text, heading content, or element ID so you always know what was clicked
+- **Marker persistence** — badges reappear automatically as you navigate between pages and views, including React-state apps that never change the URL
+- **Sidebar comment list** — all comments listed in a collapsible sidebar; click any comment to jump to and highlight the element in the preview
+- **Threaded replies** — reply to any comment directly in the sidebar
+- **Resolve / reopen** — mark comments as resolved when the issue is addressed; resolved comments are filtered from the marker layer
 - **@mentions** — type `@` in any comment or reply to mention a teammate by name
 - **Read/unread tracking** — new comments from others are marked unread with a dot indicator (session-based)
-- **Branch-scoped comments** — comments store the branch they were made on; pins from other branches are dimmed so you always know what's current
-- **Current branch display** — the active git branch is shown in the toolbar header
+- **Branch-scoped view** — comments store the branch they were made on; the active git branch is shown in the toolbar
+- **Keyboard shortcuts** — `C` toggles comment mode (Figma-style); `Esc` exits comment mode
+- **Responsive sidebar** — auto-collapses below 640px so the preview always gets enough space
 
 ---
 
@@ -76,8 +81,6 @@ Comments are stored as a file inside your project folder. This means:
 ```
 
 This keeps the comment file on your machine but prevents it from being committed and shared.
-
-> **Coming soon:** An onboarding setting on first use that lets you choose whether to commit comments to the repo or keep them gitignored locally. For now, managing `.gitignore` manually is the way to go.
 
 ---
 

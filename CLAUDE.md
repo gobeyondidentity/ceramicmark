@@ -81,6 +81,13 @@ Launch for development: `Fn+F5` in VS Code opens an Extension Development Host.
 - **Toolbar button labels** that would crowd the toolbar at narrow widths must use `hidden sm:inline` so only the icon (with a descriptive `aria-label`) remains visible below 640px.
 - **Claude must flag any new UI that introduces a fixed pixel width on a flex container, or that would overflow/clip below 640px**, and suggest a fluid alternative before implementing.
 
+## Documentation
+
+- **README.md is the public face of the project** — keep it accurate and current. After any change that adds, removes, or meaningfully alters a user-facing feature, update `README.md` to reflect the new behavior. This includes: new keyboard shortcuts, new UI elements, changed workflows, new limitations, or new configuration options.
+- **What belongs in README.md**: user-facing features, how-it-works steps, keyboard shortcuts, privacy notes, identity info, dev setup. Do not add internal implementation details — those belong in `CLAUDE.md`.
+- **What belongs in CLAUDE.md**: architectural decisions, design system rules, build commands, message flow, state management patterns, conventions for Claude to follow. Do not duplicate README content here.
+- **After every feature commit**, ask: "Does the README still accurately describe what this product does?" If not, update it in the same commit or immediately after.
+
 ## Key conventions
 
 - **Types must stay in sync**: `src/types.ts` is the source of truth. `webview/src/types.ts` is a manual mirror — update both when adding message types.
