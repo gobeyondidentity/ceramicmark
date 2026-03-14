@@ -10,6 +10,7 @@ interface MentionTextareaProps {
   autoFocus?: boolean;
   className?: string;
   style?: React.CSSProperties;
+  'aria-label'?: string;
 }
 
 export function MentionTextarea({
@@ -22,10 +23,12 @@ export function MentionTextarea({
   autoFocus,
   className,
   style,
+  'aria-label': ariaLabel,
 }: MentionTextareaProps): React.ReactElement {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [activeSuggestion, setActiveSuggestion] = useState(0);
+  const listboxId = useRef(`mention-listbox-${Math.random().toString(36).slice(2)}`).current;
   // The character position in `value` where the current @-query starts (including the @)
   const mentionStartRef = useRef<number | null>(null);
 
@@ -142,9 +145,20 @@ export function MentionTextarea({
         autoFocus={autoFocus}
         className={className}
         style={style}
+        aria-label={ariaLabel}
+        aria-haspopup="listbox"
+        aria-expanded={suggestions.length > 0}
+        aria-autocomplete="list"
+        aria-controls={suggestions.length > 0 ? listboxId : undefined}
+        aria-activedescendant={
+          suggestions.length > 0 ? `${listboxId}-option-${activeSuggestion}` : undefined
+        }
       />
       {suggestions.length > 0 && (
         <ul
+          id={listboxId}
+          role="listbox"
+          aria-label="Mention suggestions"
           className="absolute z-50 w-48 rounded shadow-xl overflow-hidden"
           style={{
             bottom: '100%',
@@ -157,6 +171,9 @@ export function MentionTextarea({
           {suggestions.map((name, i) => (
             <li
               key={name}
+              id={`${listboxId}-option-${i}`}
+              role="option"
+              aria-selected={i === activeSuggestion}
               onMouseDown={(e) => {
                 e.preventDefault();
                 insertMention(name);

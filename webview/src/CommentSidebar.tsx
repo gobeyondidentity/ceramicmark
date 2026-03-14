@@ -80,9 +80,9 @@ export function CommentSidebar({
         className="flex items-center gap-2 px-3 py-2 shrink-0"
         style={{ borderBottom: '1px solid var(--vscode-panel-border, #444)' }}
       >
-        <span className="text-xs font-medium" style={{ color: 'var(--vscode-foreground)' }}>
+        <h2 className="text-xs font-medium m-0" style={{ color: 'var(--vscode-foreground)' }}>
           Comments
-        </span>
+        </h2>
         {openCount > 0 && (
           <span
             className="px-1.5 rounded-full text-xs"
@@ -135,6 +135,7 @@ export function CommentSidebar({
                     height="10"
                     fill={isCurrentPage ? '#FF6F00' : 'currentColor'}
                     viewBox="0 0 16 16"
+                    aria-hidden="true"
                     style={{ opacity: isCurrentPage ? 1 : 0.4, flexShrink: 0 }}
                   >
                     <path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z" />
@@ -174,15 +175,18 @@ export function CommentSidebar({
                     return (
                       <div key={comment.id}>
                         {/* Comment card */}
-                        <div
-                          className="px-3 py-2 cursor-pointer"
+                        <button
+                          className="px-3 py-2 w-full text-left"
                           style={{
                             background: isExpanded
                               ? 'rgba(255,111,0,0.08)'
                               : 'transparent',
                             borderBottom: '1px solid var(--vscode-panel-border, #333)',
                             opacity: isOffBranch ? 0.5 : 1,
+                            cursor: 'pointer',
                           }}
+                          aria-expanded={isExpanded}
+                          aria-label={`Comment by ${comment.author.name}: ${comment.body}`}
                           onClick={() => {
                             const next = isExpanded ? null : comment.id;
                             setExpandedId(next);
@@ -196,6 +200,7 @@ export function CommentSidebar({
                           <div className="flex items-center gap-1 mb-0.5 min-w-0">
                             {isUnread && (
                               <span
+                                aria-label="Unread"
                                 style={{
                                   width: '6px',
                                   height: '6px',
@@ -221,6 +226,8 @@ export function CommentSidebar({
                                 fill="#22c55e"
                                 viewBox="0 0 16 16"
                                 className="shrink-0 ml-auto"
+                                aria-label="Resolved"
+                                role="img"
                               >
                                 <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z" />
                               </svg>
@@ -261,7 +268,7 @@ export function CommentSidebar({
                               </span>
                             )}
                           </div>
-                        </div>
+                        </button>
 
                         {/* Expanded thread */}
                         {isExpanded && (

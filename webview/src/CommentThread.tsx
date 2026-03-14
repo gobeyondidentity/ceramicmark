@@ -65,6 +65,7 @@ export function CommentThread({ comment, memberNames, onClose }: CommentThreadPr
             onClick={() => vscodeApi.postMessage({ type: 'deleteComment', commentId: comment.id })}
             className="opacity-60 hover:opacity-100 flex items-center"
             title="Delete comment"
+            aria-label="Delete comment"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
               <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
@@ -75,6 +76,7 @@ export function CommentThread({ comment, memberNames, onClose }: CommentThreadPr
             onClick={onClose}
             className="text-xs opacity-60 hover:opacity-100"
             title="Close"
+            aria-label="Close comment thread"
           >
             ✕
           </button>
@@ -115,6 +117,7 @@ export function CommentThread({ comment, memberNames, onClose }: CommentThreadPr
             }}
             knownNames={memberNames}
             placeholder="Reply... (type @ to mention, ⌘↵ to send)"
+            aria-label="Reply to comment"
             rows={2}
             className="w-full resize-none text-xs rounded p-2 outline-none"
             style={{

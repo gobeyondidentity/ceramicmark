@@ -38,6 +38,7 @@ export function Toolbar({
         {/* Logo */}
         <div
           className="shrink-0"
+          aria-hidden="true"
           style={{
             height: '18px',
             width: 'auto',
@@ -58,8 +59,11 @@ export function Toolbar({
         <form
           onSubmit={handleSubmit}
           className="flex flex-1 justify-center items-center gap-1 min-w-0"
+          aria-label="Navigate to URL"
         >
+          <label htmlFor="toolbar-url-input" className="sr-only">Development server URL</label>
           <input
+            id="toolbar-url-input"
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
@@ -81,7 +85,9 @@ export function Toolbar({
         <button
           onClick={onToggleCommentMode}
           title={commentMode ? 'Exit comment mode (Esc)' : 'Toggle comment mode (C)'}
-          className="flex items-center gap-1.5 px-2 py-1 text-xs rounded shrink-0 transition-opacity"
+          aria-pressed={commentMode}
+          aria-label={commentMode ? 'Exit comment mode' : 'Enter comment mode'}
+          className="flex items-center gap-1.5 px-2 py-1 text-xs rounded shrink-0 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
           style={{
             background: '#FF6F00',
             color: 'var(--vscode-titleBar-activeBackground, #3c3c3c)',

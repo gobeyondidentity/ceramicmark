@@ -45,6 +45,7 @@ export function CommentForm({ anchor, memberNames, onCancel }: CommentFormProps)
           className="text-xs opacity-50 hover:opacity-100"
           style={{ color: 'var(--vscode-foreground)' }}
           title="Cancel"
+          aria-label="Cancel new comment"
         >
           ✕
         </button>
@@ -52,13 +53,15 @@ export function CommentForm({ anchor, memberNames, onCancel }: CommentFormProps)
 
       {/* Element label */}
       <div className="flex flex-col gap-1">
-        <span className="text-xs opacity-40" style={{ color: 'var(--vscode-foreground)' }}>
+        <label htmlFor="comment-form-label" className="text-xs opacity-40" style={{ color: 'var(--vscode-foreground)' }}>
           {anchor.pageUrl ?? '/'}
-        </span>
+        </label>
         <input
+          id="comment-form-label"
           type="text"
           value={label}
           onChange={(e) => setLabel(e.target.value)}
+          aria-label="Element label"
           className="px-2 py-1 text-xs rounded outline-none"
           style={{
             background: 'var(--vscode-input-background, #3c3c3c)',
@@ -79,6 +82,7 @@ export function CommentForm({ anchor, memberNames, onCancel }: CommentFormProps)
         }}
         knownNames={memberNames}
         placeholder="Leave a comment... (type @ to mention)"
+        aria-label="Comment body"
         rows={3}
         className="w-full resize-none text-xs rounded p-2 outline-none"
         style={{
