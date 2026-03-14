@@ -17,7 +17,16 @@ const COMPANION_SCRIPT = `<script>
   var _cmFocusedPrevShadow = '';
   var _cmFocusedPrevZ = '';
   var _cmFocusedPrevPos = '';
+  var _cmFocusedPrevAnim = '';
   var _cmFocusedWasStatic = false;
+
+  // Inject focus-flash keyframes once per page load
+  if (!document.getElementById('_cm_styles')) {
+    var _cmStyle = document.createElement('style');
+    _cmStyle.id = '_cm_styles';
+    _cmStyle.textContent = '@keyframes _cm_flash{0%{box-shadow:0 0 0 10px rgba(255,111,0,0.5),0 0 0 4px rgba(255,111,0,0.25)}100%{box-shadow:0 0 0 4px rgba(255,111,0,0.25)}}';
+    (document.head || document.documentElement).appendChild(_cmStyle);
+  }
 
   function clearMarkers() {
     for (var i = 0; i < _cmMarkers.length; i++) {
@@ -101,6 +110,7 @@ const COMPANION_SCRIPT = `<script>
     _cmFocusedEl.style.outline = _cmFocusedPrevOutline;
     _cmFocusedEl.style.boxShadow = _cmFocusedPrevShadow;
     _cmFocusedEl.style.zIndex = _cmFocusedPrevZ;
+    _cmFocusedEl.style.animation = _cmFocusedPrevAnim;
     if (_cmFocusedWasStatic) _cmFocusedEl.style.position = _cmFocusedPrevPos;
     _cmFocusedEl = null;
   }
@@ -128,12 +138,16 @@ const COMPANION_SCRIPT = `<script>
     _cmFocusedPrevShadow = el.style.boxShadow;
     _cmFocusedPrevZ = el.style.zIndex;
     _cmFocusedPrevPos = el.style.position;
+    _cmFocusedPrevAnim = el.style.animation;
     var computedPos = window.getComputedStyle(el).position;
     _cmFocusedWasStatic = computedPos === 'static';
     if (_cmFocusedWasStatic) el.style.position = 'relative';
     el.style.zIndex = '99999';
     el.style.outline = '2px solid #FF6F00';
-    el.style.boxShadow = '0 0 0 4px rgba(255,111,0,0.25)';
+    // Reset animation so re-clicking the same element restarts the flash
+    el.style.animation = 'none';
+    void el.offsetWidth;
+    el.style.animation = '_cm_flash 0.7s ease-out forwards';
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
@@ -167,13 +181,38 @@ const COMPANION_SCRIPT = `<script>
 
   function buildLabel(el) {
     var tag = el.tagName.toLowerCase();
-    var text = (el.textContent || '').trim().replace(/\\s+/g,' ').slice(0, 40);
+    // 1. aria-label
+    var ariaLabel = el.getAttribute('aria-label');
+    if (ariaLabel && ariaLabel.trim()) return ariaLabel.trim() + ' \u00b7 <' + tag + '>';
+    // 2. placeholder (form fields)
+    if ((tag === 'input' || tag === 'textarea' || tag === 'select') && el.placeholder)
+      return el.placeholder + ' \u00b7 <' + tag + '>';
+    // 3. alt (images)
+    if (tag === 'img' && el.alt) return el.alt + ' \u00b7 <img>';
+    // 4. title attribute
+    var titleAttr = el.getAttribute('title');
+    if (titleAttr && titleAttr.trim()) return titleAttr.trim() + ' \u00b7 <' + tag + '>';
+    // 5. id / testId refs
     var id = el.id ? '#' + el.id : '';
     var testId = (el.dataset && el.dataset.testid) ? '[testid=' + el.dataset.testid + ']' : '';
     var ref = id || testId || '';
+    // 6. direct textContent
+    var text = (el.textContent || '').trim().replace(/\\s+/g,' ').slice(0, 40);
     if (text && ref) return text + ' \u00b7 ' + ref;
     if (text) return text + ' \u00b7 <' + tag + '>';
     if (ref) return '<' + tag + '> \u00b7 ' + ref;
+    // 7. meaningful child element (heading, button, labelled element, etc.)
+    var child = el.querySelector('h1,h2,h3,h4,h5,h6,button,[aria-label],[placeholder],img[alt],label');
+    if (child) {
+      var childLabel = child.getAttribute('aria-label') ||
+        child.getAttribute('placeholder') ||
+        child.getAttribute('alt') ||
+        (child.textContent || '').trim().replace(/\\s+/g,' ').slice(0, 40);
+      if (childLabel) return childLabel + ' \u00b7 <' + tag + '>';
+    }
+    // 8. role hint
+    var role = el.getAttribute('role');
+    if (role) return '<' + tag + '[' + role + ']>';
     return '<' + tag + '>';
   }
 
