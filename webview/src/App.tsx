@@ -15,6 +15,7 @@ interface State {
   commentMode: boolean;
   pendingAnchor: Partial<ElementAnchor> | null;
   focusedCommentId: string | null;
+  focusedPinPosition: { x: number; y: number } | null;
   focusCommentTs: number;
   currentPage: string;
   currentTitle: string;
@@ -36,7 +37,8 @@ type Action =
   | { type: 'TOGGLE_COMMENT_MODE' }
   | { type: 'ELEMENT_SELECTED'; anchor: Partial<ElementAnchor> }
   | { type: 'CANCEL_PENDING' }
-  | { type: 'FOCUS_COMMENT'; commentId: string }
+  | { type: 'FOCUS_COMMENT'; commentId: string; position?: { x: number; y: number } }
+  | { type: 'CLEAR_FOCUS' }
   | { type: 'LOAD_MEMBERS'; members: Member[] }
   | { type: 'MARK_READ'; commentId: string }
   | { type: 'SET_BRANCH'; branch: string }
@@ -86,6 +88,7 @@ function reducer(state: State, action: Action): State {
         ...state,
         comments: state.comments.filter((c) => c.id !== action.commentId),
         focusedCommentId: wasFocused ? null : state.focusedCommentId,
+        focusedPinPosition: wasFocused ? null : state.focusedPinPosition,
         focusCommentTs: wasFocused ? Date.now() : state.focusCommentTs,
       };
     }
@@ -96,7 +99,9 @@ function reducer(state: State, action: Action): State {
     case 'CANCEL_PENDING':
       return { ...state, pendingAnchor: null };
     case 'FOCUS_COMMENT':
-      return { ...state, focusedCommentId: action.commentId, focusCommentTs: Date.now() };
+      return { ...state, focusedCommentId: action.commentId, focusedPinPosition: action.position ?? null, focusCommentTs: Date.now() };
+    case 'CLEAR_FOCUS':
+      return { ...state, focusedCommentId: null, focusedPinPosition: null, focusCommentTs: Date.now() };
     case 'LOAD_MEMBERS':
       return { ...state, members: action.members };
     case 'MARK_READ': {
@@ -128,6 +133,7 @@ const initialState: State = {
   commentMode: false,
   pendingAnchor: null,
   focusedCommentId: null,
+  focusedPinPosition: null,
   focusCommentTs: 0,
   currentPage: '/',
   currentTitle: '',
@@ -184,7 +190,11 @@ export function App(): React.ReactElement {
         return;
       }
       if (message.type === 'cm-marker-clicked') {
-        dispatch({ type: 'FOCUS_COMMENT', commentId: message.commentId });
+        dispatch({
+          type: 'FOCUS_COMMENT',
+          commentId: message.commentId,
+          position: message.x != null ? { x: message.x as number, y: message.y as number } : undefined,
+        });
         return;
       }
       if (message.type === 'cm-navigate') {
@@ -296,13 +306,16 @@ export function App(): React.ReactElement {
           displayUrl={state.displayUrl}
           commentMode={state.commentMode}
           focusedComment={focusedComment}
+          focusedPinPosition={state.focusedPinPosition}
           focusCommentTs={state.focusCommentTs}
           currentPage={state.currentPage}
           currentTitle={state.currentTitle}
           iframeReadyAt={state.iframeReadyAt}
           comments={state.comments}
+          memberNames={memberNames}
           connectionFailed={state.connectionFailed}
           onCommentModeExit={() => dispatch({ type: 'TOGGLE_COMMENT_MODE' })}
+          onClearFocus={() => dispatch({ type: 'CLEAR_FOCUS' })}
           onRetryUrl={() => document.getElementById('toolbar-url-input')?.focus()}
         />
       </div>

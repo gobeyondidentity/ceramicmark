@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { CommentThread } from './CommentThread.js';
 import type { Comment } from './types.js';
 
 interface PreviewFrameProps {
@@ -6,13 +7,16 @@ interface PreviewFrameProps {
   displayUrl: string;
   commentMode: boolean;
   focusedComment: Comment | null;
+  focusedPinPosition: { x: number; y: number } | null;
   focusCommentTs: number;
   currentPage: string;
   currentTitle: string;
   iframeReadyAt: number;
   comments: Comment[];
+  memberNames: string[];
   connectionFailed: boolean;
   onCommentModeExit: () => void;
+  onClearFocus: () => void;
   onRetryUrl: () => void;
 }
 
@@ -21,16 +25,20 @@ export function PreviewFrame({
   displayUrl,
   commentMode,
   focusedComment,
+  focusedPinPosition,
   focusCommentTs,
   currentPage,
   currentTitle,
   iframeReadyAt,
   comments,
+  memberNames,
   connectionFailed,
   onCommentModeExit,
+  onClearFocus,
   onRetryUrl,
 }: PreviewFrameProps): React.ReactElement {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Refs so callbacks always see the latest values without being recreated
   const focusedCommentRef = useRef(focusedComment);
@@ -190,6 +198,7 @@ export function PreviewFrame({
 
   return (
     <div
+      ref={containerRef}
       className="relative flex-1 overflow-hidden"
       style={commentMode ? { outline: '2px solid #FF6F00', outlineOffset: '-2px' } : undefined}
     >
@@ -271,6 +280,38 @@ export function PreviewFrame({
           </div>
         </div>
       )}
+
+      {/* Focused comment popover */}
+      {focusedComment && !connectionFailed && (() => {
+        const containerW = containerRef.current?.offsetWidth ?? 600;
+        const containerH = containerRef.current?.offsetHeight ?? 400;
+        const POPOVER_W = 296;
+        const POPOVER_H = 340;
+        const pos = focusedPinPosition;
+        let popoverStyle: React.CSSProperties = { position: 'absolute', zIndex: 20, width: `${POPOVER_W}px` };
+        if (pos) {
+          const flipX = pos.x + POPOVER_W + 16 > containerW;
+          const flipY = pos.y + POPOVER_H + 8 > containerH;
+          popoverStyle = {
+            ...popoverStyle,
+            left: flipX ? undefined : pos.x + 12,
+            right: flipX ? containerW - pos.x + 12 : undefined,
+            top: flipY ? undefined : pos.y,
+            bottom: flipY ? containerH - pos.y : undefined,
+          };
+        } else {
+          popoverStyle = { ...popoverStyle, top: 16, right: 16 };
+        }
+        return (
+          <div style={popoverStyle}>
+            <CommentThread
+              comment={focusedComment}
+              memberNames={memberNames}
+              onClose={onClearFocus}
+            />
+          </div>
+        );
+      })()}
 
       {/* Comment mode hint */}
       {commentMode && (

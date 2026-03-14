@@ -253,7 +253,10 @@ const COMPANION_SCRIPT = `<script>
       e.preventDefault();
       e.stopPropagation();
       var commentId = badgeEl.getAttribute('data-cm-comment-id');
-      if (commentId) window.parent.postMessage({ type: 'cm-marker-clicked', commentId: commentId }, '*');
+      if (commentId) {
+        var badgeRect = badgeEl.getBoundingClientRect();
+        window.parent.postMessage({ type: 'cm-marker-clicked', commentId: commentId, x: Math.round(badgeRect.left + badgeRect.width / 2), y: Math.round(badgeRect.top + badgeRect.height / 2) }, '*');
+      }
       return;
     }
     if (!_cmActive) return;
