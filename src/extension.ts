@@ -55,6 +55,10 @@ export function activate(context: vscode.ExtensionContext): void {
       previewProvider.focusComment(commentId);
     }),
 
+    vscode.commands.registerCommand('ceramicMark.toggleCommentMode', () => {
+      previewProvider.toggleCommentMode();
+    }),
+
     vscode.commands.registerCommand('ceramicMark.resolveComment', (item: CommentItem) => {
       previewProvider.resolveComment(item.comment.id);
     }),

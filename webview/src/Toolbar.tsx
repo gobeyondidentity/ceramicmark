@@ -80,17 +80,29 @@ export function Toolbar({
         {/* Comment mode toggle */}
         <button
           onClick={onToggleCommentMode}
-          title={commentMode ? 'Exit comment mode (Esc)' : 'Add comment (click on preview)'}
-          className="flex items-center gap-1 px-2 py-1 text-xs rounded shrink-0 transition-colors"
+          title={commentMode ? 'Exit comment mode (Esc)' : 'Toggle comment mode (C)'}
+          className="flex items-center gap-1.5 px-2 py-1 text-xs rounded shrink-0 transition-opacity"
           style={{
             background: '#FF6F00',
             color: 'var(--vscode-titleBar-activeBackground, #3c3c3c)',
-            opacity: commentMode ? 1 : 0.75,
+            opacity: commentMode ? 1 : 0.4,
             border: '1px solid transparent',
           }}
         >
           <span>{commentMode ? '✦' : '+'}</span>
           <span>{commentMode ? 'Commenting' : 'Comment'}</span>
+          {!commentMode && (
+            <span
+              className="text-xs rounded px-1"
+              style={{
+                background: 'rgba(0,0,0,0.2)',
+                fontSize: '10px',
+                lineHeight: '14px',
+              }}
+            >
+              C
+            </span>
+          )}
         </button>
       </div>
 

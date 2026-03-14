@@ -76,7 +76,8 @@ export type ExtensionMessage =
   | { type: 'identity'; author: Author }
   | { type: 'loadMembers'; members: Member[] }
   | { type: 'setBranch'; branch: string }
-  | { type: 'proxyReady'; displayUrl: string; proxyUrl: string };
+  | { type: 'proxyReady'; displayUrl: string; proxyUrl: string }
+  | { type: 'toggleCommentMode' };
 
 // Messages sent from the webview → extension host
 export type WebviewMessage =

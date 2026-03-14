@@ -198,6 +198,15 @@ export class PreviewProvider {
     this.panel?.webview.postMessage(message);
   }
 
+  public toggleCommentMode(): void {
+    if (!this.panel) {
+      this.open();
+      return;
+    }
+    this.panel.reveal();
+    this.postMessage({ type: 'toggleCommentMode' });
+  }
+
   public focusComment(commentId: string): void {
     this.open();
     setTimeout(() => this.postMessage({ type: 'focusComment', commentId }), 300);

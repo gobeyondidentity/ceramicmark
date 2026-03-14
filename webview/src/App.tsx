@@ -116,6 +116,8 @@ export function App(): React.ReactElement {
   const [state, dispatch] = useReducer(reducer, initialState);
   const isMounted = useRef(false);
   const identityRef = useRef<string | null>(null);
+  const hasUrlRef = useRef(false);
+  useEffect(() => { hasUrlRef.current = !!state.displayUrl; }, [state.displayUrl]);
 
   useEffect(() => {
     if (isMounted.current) return;
@@ -184,11 +186,28 @@ export function App(): React.ReactElement {
         case 'proxyReady':
           dispatch({ type: 'SET_PROXY_URL', iframeUrl: extMsg.proxyUrl });
           break;
+        case 'toggleCommentMode':
+          dispatch({ type: 'TOGGLE_COMMENT_MODE' });
+          break;
       }
     };
 
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
+  }, []);
+
+  // 'C' key toggles comment mode (Figma-style), skips when focus is in an input
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!hasUrlRef.current) return;
+      if (e.key !== 'c' && e.key !== 'C') return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+      dispatch({ type: 'TOGGLE_COMMENT_MODE' });
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
   }, []);
 
   const handleUrlChange = (url: string) => {
