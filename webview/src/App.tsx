@@ -288,8 +288,10 @@ function SplashScreen({ onUrlChange }: { onUrlChange: (url: string) => void }): 
         style={{ width: '282px', filter: 'brightness(0) invert(1)' }}
         dangerouslySetInnerHTML={{ __html: logoSvg.replace(/<svg /, '<svg width="282" ') }}
       />
-      <form onSubmit={handleSubmit} className="flex items-center gap-1 w-80">
+      <form onSubmit={handleSubmit} className="flex items-center gap-1 w-80" aria-label="Enter development server URL">
+        <label htmlFor="splash-url-input" className="sr-only">Development server URL</label>
         <input
+          id="splash-url-input"
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
