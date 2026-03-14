@@ -220,11 +220,14 @@ export function PreviewFrame({
       {connectionFailed && (
         <div
           className="absolute inset-0 flex items-center justify-center"
-          style={{ background: 'var(--vscode-editor-background)', zIndex: 10 }}
+          style={{ background: '#FF6F00', zIndex: 10 }}
           role="status"
           aria-live="polite"
         >
-          <div className="text-center px-6" style={{ maxWidth: '320px' }}>
+          <div
+            className="text-center px-6 py-8 rounded-lg"
+            style={{ maxWidth: '320px', background: '#42372B' }}
+          >
             {/* Sad illustration */}
             {(() => {
               const sadUri = document.querySelector<HTMLMetaElement>('meta[name="cm-sad"]')?.content;
@@ -243,13 +246,13 @@ export function PreviewFrame({
                 />
               ) : null;
             })()}
-            <div className="text-sm mb-1" style={{ color: 'var(--vscode-foreground)' }}>
+            <div className="text-sm mb-1" style={{ color: '#FF6F00' }}>
               Can't reach dev server
             </div>
-            <div className="text-xs mb-3" style={{ color: '#FF6F00' }}>
+            <div className="text-xs mb-3" style={{ color: '#FF6F00', opacity: 0.7 }}>
               {displayUrl}
             </div>
-            <div className="text-xs mb-5" style={{ color: 'var(--vscode-foreground)', opacity: 0.5, lineHeight: 1.6 }}>
+            <div className="text-xs mb-5" style={{ color: '#FF6F00', opacity: 0.5, lineHeight: 1.6 }}>
               Make sure your dev server is running, then wait — CeramicMark retries automatically.
             </div>
             <button
