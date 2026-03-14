@@ -13,13 +13,23 @@ export interface MembersFile {
   members: Member[];
 }
 
-export interface Position {
-  /** Percentage (0–100) of the iframe width */
-  x: number;
-  /** Percentage (0–100) of the iframe height */
-  y: number;
-  /** Scroll offset (px) of the iframe at the time the pin was placed */
-  scrollY: number;
+export interface ElementAnchor {
+  /** Page pathname where the comment was placed, e.g. '/dashboard' */
+  pageUrl: string;
+  /** Human-readable label auto-generated from element: "Submit button · #submit-btn" */
+  label: string;
+  /** tag name of the clicked element */
+  tag?: string;
+  /** element id attribute */
+  elementId?: string;
+  /** data-testid attribute */
+  testId?: string;
+  /** visible text content (truncated) */
+  text?: string;
+  /** CSS path fallback for elements with no id/testId/text */
+  cssPath?: string;
+  /** workspace-relative path to screenshot thumbnail, if captured */
+  thumbnail?: string;
 }
 
 export interface CodeRef {
@@ -41,7 +51,7 @@ export interface Comment {
   id: string;
   createdAt: string;
   author: Author;
-  position: Position;
+  anchor: ElementAnchor;
   /** Optional association with a source file location */
   codeRef?: CodeRef;
   body: string;
@@ -62,15 +72,18 @@ export type ExtensionMessage =
   | { type: 'commentAdded'; comment: Comment }
   | { type: 'commentUpdated'; comment: Comment }
   | { type: 'commentDeleted'; commentId: string }
-  | { type: 'focusPin'; commentId: string }
+  | { type: 'focusComment'; commentId: string }
   | { type: 'identity'; author: Author }
   | { type: 'loadMembers'; members: Member[] }
-  | { type: 'setBranch'; branch: string };
+  | { type: 'setBranch'; branch: string }
+  | { type: 'proxyReady'; displayUrl: string; proxyUrl: string }
+  | { type: 'toggleCommentMode' };
 
 // Messages sent from the webview → extension host
 export type WebviewMessage =
   | { type: 'ready' }
-  | { type: 'addComment'; position: Position; body: string; codeRef?: CodeRef; mentions?: string[] }
+  | { type: 'setTargetUrl'; url: string }
+  | { type: 'addComment'; anchor: ElementAnchor; body: string; codeRef?: CodeRef; mentions?: string[] }
   | { type: 'addReply'; commentId: string; body: string; mentions?: string[] }
   | { type: 'resolveComment'; commentId: string }
   | { type: 'reopenComment'; commentId: string }

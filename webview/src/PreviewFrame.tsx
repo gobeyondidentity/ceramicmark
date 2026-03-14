@@ -1,47 +1,32 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { CommentOverlay } from './CommentOverlay.js';
+import React, { useEffect, useRef } from 'react';
 import type { Comment } from './types.js';
 
 interface PreviewFrameProps {
-  url: string;
-  comments: Comment[];
+  iframeUrl: string;
+  displayUrl: string;
   commentMode: boolean;
-  pinsVisible: boolean;
-  focusedPinId: string | null;
-  memberNames: string[];
-  unreadIds: Set<string>;
-  currentBranch: string | null;
+  focusedComment: Comment | null;
+  currentPage: string;
+  comments: Comment[];
   onCommentModeExit: () => void;
-  onClearFocus: () => void;
-  onMarkRead: (commentId: string) => void;
 }
 
 export function PreviewFrame({
-  url,
-  comments,
+  iframeUrl,
+  displayUrl,
   commentMode,
-  pinsVisible,
-  focusedPinId,
-  memberNames,
-  unreadIds,
-  currentBranch,
+  focusedComment,
+  currentPage,
+  comments,
   onCommentModeExit,
-  onClearFocus,
-  onMarkRead,
 }: PreviewFrameProps): React.ReactElement {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  // Track container dimensions so pins reposition correctly on panel resize
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const ro = new ResizeObserver(([entry]) => {
-      const { width, height } = entry.contentRect;
-      setContainerSize({ width, height });
-    });
-    ro.observe(containerRef.current);
-    return () => ro.disconnect();
-  }, []);
+  // Refs so the onLoad handler always sees the latest values without being recreated
+  const focusedCommentRef = useRef(focusedComment);
+  const commentsRef = useRef(comments);
+  useEffect(() => { focusedCommentRef.current = focusedComment; }, [focusedComment]);
+  useEffect(() => { commentsRef.current = comments; }, [comments]);
 
   // Exit comment mode on Escape
   useEffect(() => {
@@ -53,54 +38,129 @@ export function PreviewFrame({
     return () => window.removeEventListener('keydown', handler);
   }, [commentMode, onCommentModeExit]);
 
-  const handleOverlayClick = useCallback(
-    (_x: number, _y: number) => {
-      if (!commentMode) return;
-    },
-    [commentMode],
-  );
+  // Tell the iframe when comment mode changes
+  useEffect(() => {
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: 'cm-comment-mode', active: commentMode },
+      '*',
+    );
+  }, [commentMode]);
+
+  // Send markers when comments change while on the same page
+  useEffect(() => {
+    const markerData = comments.map((c) => ({
+      id: c.id,
+      elementId: c.anchor?.elementId,
+      testId: c.anchor?.testId,
+      tag: c.anchor?.tag,
+      text: c.anchor?.text,
+      cssPath: c.anchor?.cssPath,
+      status: c.status,
+    }));
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: 'cm-update-markers', comments: markerData },
+      '*',
+    );
+  }, [comments]);
+
+  // Navigate to the comment's page, or highlight immediately if already there
+  useEffect(() => {
+    if (!focusedComment || !iframeUrl) return;
+    const commentPage = focusedComment.anchor?.pageUrl ?? '/';
+    if (commentPage !== currentPage) {
+      // Change src — onLoad will send the highlight once the DOM is ready
+      if (iframeRef.current) {
+        iframeRef.current.src = iframeUrl + commentPage;
+      }
+    } else {
+      // Already on the right page, DOM is ready — highlight now
+      iframeRef.current?.contentWindow?.postMessage(
+        {
+          type: 'cm-highlight-element',
+          elementId: focusedComment.anchor?.elementId,
+          testId: focusedComment.anchor?.testId,
+          tag: focusedComment.anchor?.tag,
+          text: focusedComment.anchor?.text,
+          cssPath: focusedComment.anchor?.cssPath,
+        },
+        '*',
+      );
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusedComment]); // intentionally omits currentPage — only re-run on new focus
+
+  // After every iframe page load the DOM is guaranteed ready.
+  // Re-send markers and, if a comment is focused, its highlight.
+  const handleIframeLoad = () => {
+    const win = iframeRef.current?.contentWindow;
+    if (!win) return;
+
+    const markerData = commentsRef.current.map((c) => ({
+      id: c.id,
+      elementId: c.anchor?.elementId,
+      testId: c.anchor?.testId,
+      tag: c.anchor?.tag,
+      text: c.anchor?.text,
+      cssPath: c.anchor?.cssPath,
+      status: c.status,
+    }));
+    win.postMessage({ type: 'cm-update-markers', comments: markerData }, '*');
+
+    const fc = focusedCommentRef.current;
+    if (fc) {
+      win.postMessage(
+        {
+          type: 'cm-highlight-element',
+          elementId: fc.anchor?.elementId,
+          testId: fc.anchor?.testId,
+          tag: fc.anchor?.tag,
+          text: fc.anchor?.text,
+          cssPath: fc.anchor?.cssPath,
+        },
+        '*',
+      );
+    }
+  };
 
   return (
     <div
-      ref={containerRef}
       className="relative flex-1 overflow-hidden"
       style={commentMode ? { outline: '2px solid #FF6F00', outlineOffset: '-2px' } : undefined}
     >
-      {/* The live preview iframe */}
-      <iframe
-        src={url}
-        className="w-full h-full border-0"
-        title="Design Preview"
-        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
-        style={{ pointerEvents: commentMode ? 'none' : 'auto' }}
-      />
+      {iframeUrl ? (
+        <iframe
+          ref={iframeRef}
+          src={iframeUrl}
+          className="w-full h-full border-0"
+          title="Design Preview"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+          onLoad={handleIframeLoad}
+        />
+      ) : (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="text-xs" style={{ color: 'var(--vscode-foreground)', opacity: 0.5 }}>
+              Connecting to{' '}
+              <span style={{ color: '#FF6F00' }}>{displayUrl}</span>
+            </div>
+            <div className="text-xs mt-1" style={{ color: 'var(--vscode-foreground)', opacity: 0.3 }}>
+              Starting proxy...
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* Comment overlay — sits on top, captures clicks in comment mode */}
-      <CommentOverlay
-        comments={comments}
-        commentMode={commentMode}
-        pinsVisible={pinsVisible}
-        focusedPinId={focusedPinId}
-        memberNames={memberNames}
-        containerSize={containerSize}
-        unreadIds={unreadIds}
-        currentBranch={currentBranch}
-        onPinClick={handleOverlayClick}
-        onClearFocus={onClearFocus}
-        onMarkRead={onMarkRead}
-      />
-
-      {/* Comment mode cursor hint */}
+      {/* Comment mode hint */}
       {commentMode && (
         <div
           className="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs px-3 py-1.5 rounded-full pointer-events-none"
           style={{
-            background: 'var(--vscode-button-background, #FF6F00)',
-            color: 'var(--vscode-button-foreground, #fff)',
+            background: '#FF6F00',
+            color: 'var(--vscode-titleBar-activeBackground, #3c3c3c)',
             boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
           }}
         >
-          Click anywhere to leave a comment · Esc to cancel
+          Click any element to comment · Esc to cancel
         </div>
       )}
     </div>

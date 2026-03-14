@@ -17,7 +17,8 @@ export class FileStore implements ICommentStore {
     try {
       const raw = await fs.readFile(this.filePath, 'utf-8');
       const data = JSON.parse(raw) as CommentsFile;
-      return data.comments ?? [];
+      // Filter out legacy pin-based comments that predate the anchor schema
+      return (data.comments ?? []).filter((c) => c.anchor != null);
     } catch (err: unknown) {
       // File doesn't exist yet — that's fine, return empty
       if (isNodeError(err) && err.code === 'ENOENT') {

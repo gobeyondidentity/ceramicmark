@@ -41,6 +41,18 @@
         "command": "ceramicMark.deleteComment",
         "title": "Delete",
         "category": "CeramicMark"
+      },
+      {
+        "command": "ceramicMark.toggleCommentMode",
+        "title": "Toggle Comment Mode",
+        "category": "CeramicMark"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "ceramicMark.toggleCommentMode",
+        "key": "ctrl+shift+c",
+        "mac": "cmd+shift+c"
       }
     ],
     "viewsContainers": {

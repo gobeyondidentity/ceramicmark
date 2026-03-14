@@ -6,10 +6,13 @@ import type { ICommentStore } from '../store/ICommentStore.js';
 import type { MemberStore } from '../store/memberStore.js';
 import type { Comment, ExtensionMessage, WebviewMessage, Reply } from '../types.js';
 import { getGitIdentity, getGitBranch } from '../auth/gitIdentity.js';
+import { HttpProxy } from '../services/httpProxy.js';
 
 export class PreviewProvider {
   public static readonly viewType = 'ceramicMark.preview';
   private panel: vscode.WebviewPanel | undefined;
+  private proxy: HttpProxy | undefined;
+  private readonly outputChannel = vscode.window.createOutputChannel('CeramicMark Proxy');
   private readonly onCommentChangedEmitter = new vscode.EventEmitter<void>();
   public readonly onCommentChanged = this.onCommentChangedEmitter.event;
 
@@ -39,7 +42,7 @@ export class PreviewProvider {
       },
     );
 
-    this.panel.iconPath = vscode.Uri.joinPath(this.context.extensionUri, 'images', 'cm_icon.svg');
+    this.panel.iconPath = vscode.Uri.joinPath(this.context.extensionUri, 'images', 'cm_tab_icon.svg');
     this.panel.webview.html = this.getHtml(this.panel.webview);
 
     this.panel.webview.onDidReceiveMessage(
@@ -50,6 +53,8 @@ export class PreviewProvider {
 
     this.panel.onDidDispose(() => {
       this.panel = undefined;
+      this.proxy?.stop();
+      this.proxy = undefined;
     });
   }
 
@@ -58,6 +63,19 @@ export class PreviewProvider {
       case 'ready': {
         await this.sendIdentity();
         await this.sendAllComments();
+        break;
+      }
+
+      case 'setTargetUrl': {
+        const displayUrl = message.url;
+        if (!this.proxy) {
+          this.proxy = new HttpProxy(displayUrl, this.outputChannel);
+        } else {
+          this.proxy.updateTarget(displayUrl);
+        }
+        const port = await this.proxy.port;
+        const proxyUrl = `http://127.0.0.1:${port}`;
+        this.postMessage({ type: 'proxyReady', displayUrl, proxyUrl });
         break;
       }
 
@@ -77,7 +95,7 @@ export class PreviewProvider {
           id: randomUUID(),
           createdAt: new Date().toISOString(),
           author,
-          position: message.position,
+          anchor: message.anchor,
           codeRef: message.codeRef,
           body: message.body,
           mentions: message.mentions ?? [],
@@ -180,10 +198,18 @@ export class PreviewProvider {
     this.panel?.webview.postMessage(message);
   }
 
-  public focusPin(commentId: string): void {
+  public toggleCommentMode(): void {
+    if (!this.panel) {
+      this.open();
+      return;
+    }
+    this.panel.reveal();
+    this.postMessage({ type: 'toggleCommentMode' });
+  }
+
+  public focusComment(commentId: string): void {
     this.open();
-    // Small delay to allow the panel to mount before sending the message
-    setTimeout(() => this.postMessage({ type: 'focusPin', commentId }), 300);
+    setTimeout(() => this.postMessage({ type: 'focusComment', commentId }), 300);
   }
 
   public async resolveComment(commentId: string): Promise<void> {
@@ -218,7 +244,7 @@ export class PreviewProvider {
     this.onCommentChangedEmitter.fire();
   }
 
-  /** Refresh comment pins after an external file change */
+  /** Refresh comment list after an external file change */
   public async refresh(): Promise<void> {
     if (this.panel) {
       await this.sendAllComments();
