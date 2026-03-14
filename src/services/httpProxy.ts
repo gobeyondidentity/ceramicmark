@@ -17,16 +17,7 @@ const COMPANION_SCRIPT = `<script>
   var _cmFocusedPrevShadow = '';
   var _cmFocusedPrevZ = '';
   var _cmFocusedPrevPos = '';
-  var _cmFocusedPrevAnim = '';
   var _cmFocusedWasStatic = false;
-
-  // Inject focus-flash keyframes once per page load
-  if (!document.getElementById('_cm_styles')) {
-    var _cmStyle = document.createElement('style');
-    _cmStyle.id = '_cm_styles';
-    _cmStyle.textContent = '@keyframes _cm_flash{0%{box-shadow:0 0 0 10px rgba(255,111,0,0.5),0 0 0 4px rgba(255,111,0,0.25)}100%{box-shadow:0 0 0 4px rgba(255,111,0,0.25)}}';
-    (document.head || document.documentElement).appendChild(_cmStyle);
-  }
 
   function clearMarkers() {
     for (var i = 0; i < _cmMarkers.length; i++) {
@@ -110,7 +101,6 @@ const COMPANION_SCRIPT = `<script>
     _cmFocusedEl.style.outline = _cmFocusedPrevOutline;
     _cmFocusedEl.style.boxShadow = _cmFocusedPrevShadow;
     _cmFocusedEl.style.zIndex = _cmFocusedPrevZ;
-    _cmFocusedEl.style.animation = _cmFocusedPrevAnim;
     if (_cmFocusedWasStatic) _cmFocusedEl.style.position = _cmFocusedPrevPos;
     _cmFocusedEl = null;
   }
@@ -138,17 +128,21 @@ const COMPANION_SCRIPT = `<script>
     _cmFocusedPrevShadow = el.style.boxShadow;
     _cmFocusedPrevZ = el.style.zIndex;
     _cmFocusedPrevPos = el.style.position;
-    _cmFocusedPrevAnim = el.style.animation;
     var computedPos = window.getComputedStyle(el).position;
     _cmFocusedWasStatic = computedPos === 'static';
     if (_cmFocusedWasStatic) el.style.position = 'relative';
     el.style.zIndex = '99999';
-    el.style.outline = '2px solid #FF6F00';
-    // Reset animation so re-clicking the same element restarts the flash
-    el.style.animation = 'none';
-    void el.offsetWidth;
-    el.style.animation = '_cm_flash 0.7s ease-out forwards';
+    el.style.boxShadow = '0 0 0 4px rgba(255,111,0,0.25)';
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // JS-driven outline pulse — reliable across VS Code webview iframe environments
+    var flashEl = el;
+    var pulseSteps = ['4px solid #FF6F00', '2px solid rgba(255,111,0,0.25)', '4px solid #FF6F00', '2px solid #FF6F00'];
+    function doPulse(i) {
+      if (_cmFocusedEl !== flashEl) return;
+      flashEl.style.outline = pulseSteps[i];
+      if (i < pulseSteps.length - 1) setTimeout(function() { doPulse(i + 1); }, 160);
+    }
+    doPulse(0);
   }
 
   function tryFocusHighlight(attemptsLeft) {
