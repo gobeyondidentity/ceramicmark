@@ -96,9 +96,9 @@ export function Toolbar({
             opacity: sidebarOpen ? 1 : 0.5,
           }}
         >
-          {/* Bootstrap Icon: layout-sidebar-reverse */}
+          {/* Bootstrap Icon: layout-text-sidebar-reverse */}
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
-            <path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h11A1.5 1.5 0 0 1 15 2.5v11a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 13.5v-11zM2.5 2a.5.5 0 0 0-.5.5v11a.5.5 0 0 0 .5.5H10v-12H2.5zm7.5 0v12h3.5a.5.5 0 0 0 .5-.5v-11a.5.5 0 0 0-.5-.5H10z"/>
+            <path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h11A1.5 1.5 0 0 1 15 2.5v11a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 13.5v-11zm8.5-.5v12h3.5a.5.5 0 0 0 .5-.5v-11a.5.5 0 0 0-.5-.5H10zm-1 0H2.5a.5.5 0 0 0-.5.5v11a.5.5 0 0 0 .5.5H9v-12zm-6 7h4a.5.5 0 0 1 0 1H3a.5.5 0 0 1 0-1zm0-3h4a.5.5 0 0 1 0 1H3a.5.5 0 0 1 0-1z"/>
           </svg>
         </button>
 
