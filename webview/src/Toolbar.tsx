@@ -5,16 +5,20 @@ interface ToolbarProps {
   previewUrl: string;
   commentMode: boolean;
   currentBranch: string | null;
+  sidebarOpen: boolean;
   onUrlChange: (url: string) => void;
   onToggleCommentMode: () => void;
+  onToggleSidebar: () => void;
 }
 
 export function Toolbar({
   previewUrl,
   commentMode,
   currentBranch,
+  sidebarOpen,
   onUrlChange,
   onToggleCommentMode,
+  onToggleSidebar,
 }: ToolbarProps): React.ReactElement {
   const [inputValue, setInputValue] = useState(previewUrl);
 
@@ -71,15 +75,32 @@ export function Toolbar({
               if (!inputValue) setInputValue('http://localhost:');
             }}
             placeholder="Enter Dev Server: ex http://localhost:3000 | Press Enter"
-            className="px-2 py-1 text-xs rounded outline-none placeholder-[#FF6F00]"
+            className="w-full px-2 py-1 text-xs rounded outline-none placeholder-[#FF6F00]"
             style={{
-              width: '420px',
               background: 'transparent',
               color: '#FF6F00',
               border: '1px solid #FF6F00',
             }}
           />
         </form>
+
+        {/* Sidebar toggle */}
+        <button
+          onClick={onToggleSidebar}
+          aria-pressed={sidebarOpen}
+          aria-label={sidebarOpen ? 'Hide comments sidebar' : 'Show comments sidebar'}
+          title={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
+          className="shrink-0 flex items-center px-1.5 py-1 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+          style={{
+            color: sidebarOpen ? '#FF6F00' : 'var(--vscode-titleBar-activeForeground, #ccc)',
+            opacity: sidebarOpen ? 1 : 0.5,
+          }}
+        >
+          {/* Bootstrap Icon: layout-sidebar-reverse */}
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h11A1.5 1.5 0 0 1 15 2.5v11a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 13.5v-11zM2.5 2a.5.5 0 0 0-.5.5v11a.5.5 0 0 0 .5.5H10v-12H2.5zm7.5 0v12h3.5a.5.5 0 0 0 .5-.5v-11a.5.5 0 0 0-.5-.5H10z"/>
+          </svg>
+        </button>
 
         {/* Comment mode toggle */}
         <button
@@ -95,11 +116,14 @@ export function Toolbar({
             border: '1px solid transparent',
           }}
         >
-          <span>{commentMode ? '✦' : '+'}</span>
-          <span>{commentMode ? 'Commenting' : 'Comment'}</span>
+          {/* Always-visible chat icon */}
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M8 15c4.418 0 8-3.134 8-7s-3.582-7-8-7-8 3.134-8 7c0 1.76.743 3.37 1.97 4.6-.097 1.016-.417 2.13-.771 2.966-.079.186.074.394.273.362 2.256-.37 3.597-.938 4.18-1.234A9.06 9.06 0 0 0 8 15z"/>
+          </svg>
+          <span className="hidden sm:inline">{commentMode ? 'Commenting' : 'Comment'}</span>
           {!commentMode && (
             <span
-              className="text-xs rounded px-1"
+              className="hidden sm:inline text-xs rounded px-1"
               style={{
                 background: 'rgba(0,0,0,0.2)',
                 fontSize: '10px',

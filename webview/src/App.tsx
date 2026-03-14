@@ -18,6 +18,7 @@ interface State {
   currentPage: string;
   unreadIds: Set<string>;
   currentBranch: string | null;
+  sidebarOpen: boolean;
 }
 
 type Action =
@@ -35,7 +36,9 @@ type Action =
   | { type: 'LOAD_MEMBERS'; members: Member[] }
   | { type: 'MARK_READ'; commentId: string }
   | { type: 'SET_BRANCH'; branch: string }
-  | { type: 'IFRAME_NAVIGATED'; pathname: string };
+  | { type: 'IFRAME_NAVIGATED'; pathname: string }
+  | { type: 'TOGGLE_SIDEBAR' }
+  | { type: 'SET_SIDEBAR'; open: boolean };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -93,6 +96,10 @@ function reducer(state: State, action: Action): State {
       return { ...state, currentBranch: action.branch };
     case 'IFRAME_NAVIGATED':
       return { ...state, currentPage: action.pathname };
+    case 'TOGGLE_SIDEBAR':
+      return { ...state, sidebarOpen: !state.sidebarOpen };
+    case 'SET_SIDEBAR':
+      return { ...state, sidebarOpen: action.open };
     default:
       return state;
   }
@@ -110,6 +117,7 @@ const initialState: State = {
   currentPage: '/',
   unreadIds: new Set(),
   currentBranch: null,
+  sidebarOpen: true,
 };
 
 export function App(): React.ReactElement {
@@ -200,6 +208,16 @@ export function App(): React.ReactElement {
     return () => window.removeEventListener('message', handler);
   }, []);
 
+  // Auto-collapse sidebar when panel is narrow (< 640px)
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)');
+    if (mq.matches) dispatch({ type: 'SET_SIDEBAR', open: false });
+    const handler = (e: MediaQueryListEvent) =>
+      dispatch({ type: 'SET_SIDEBAR', open: !e.matches });
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
   // 'C' key toggles comment mode (Figma-style), skips when focus is in an input
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -236,8 +254,10 @@ export function App(): React.ReactElement {
           previewUrl={state.displayUrl}
           commentMode={state.commentMode}
           currentBranch={state.currentBranch}
+          sidebarOpen={state.sidebarOpen}
           onUrlChange={handleUrlChange}
           onToggleCommentMode={() => dispatch({ type: 'TOGGLE_COMMENT_MODE' })}
+          onToggleSidebar={() => dispatch({ type: 'TOGGLE_SIDEBAR' })}
         />
         <PreviewFrame
           iframeUrl={state.iframeUrl}
@@ -250,19 +270,21 @@ export function App(): React.ReactElement {
         />
       </div>
 
-      {/* Right: comments sidebar */}
-      <CommentSidebar
-        comments={state.comments}
-        pendingAnchor={state.pendingAnchor}
-        memberNames={memberNames}
-        currentBranch={state.currentBranch}
-        currentPage={state.currentPage}
-        focusedCommentId={state.focusedCommentId}
-        unreadIds={state.unreadIds}
-        onCancelPending={() => dispatch({ type: 'CANCEL_PENDING' })}
-        onFocusComment={(id) => dispatch({ type: 'FOCUS_COMMENT', commentId: id })}
-        onMarkRead={(id) => dispatch({ type: 'MARK_READ', commentId: id })}
-      />
+      {/* Right: comments sidebar — hidden when collapsed */}
+      {state.sidebarOpen && (
+        <CommentSidebar
+          comments={state.comments}
+          pendingAnchor={state.pendingAnchor}
+          memberNames={memberNames}
+          currentBranch={state.currentBranch}
+          currentPage={state.currentPage}
+          focusedCommentId={state.focusedCommentId}
+          unreadIds={state.unreadIds}
+          onCancelPending={() => dispatch({ type: 'CANCEL_PENDING' })}
+          onFocusComment={(id) => dispatch({ type: 'FOCUS_COMMENT', commentId: id })}
+          onMarkRead={(id) => dispatch({ type: 'MARK_READ', commentId: id })}
+        />
+      )}
     </div>
   );
 }
