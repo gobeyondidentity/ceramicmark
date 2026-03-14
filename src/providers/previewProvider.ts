@@ -107,7 +107,7 @@ export class PreviewProvider {
         this.postMessage({ type: 'commentAdded', comment });
         this.onCommentChangedEmitter.fire();
         if (existing.length === 0) {
-          await this.promptGitignore(cwd);
+          await this.notifyFirstComment();
         }
         break;
       }
@@ -150,31 +150,12 @@ export class PreviewProvider {
     }
   }
 
-  private async promptGitignore(cwd: string | undefined): Promise<void> {
-    if (!cwd) return;
+  private async notifyFirstComment(): Promise<void> {
     if (this.context.workspaceState.get<boolean>('gitignorePrompted')) return;
     await this.context.workspaceState.update('gitignorePrompted', true);
-
-    const gitignorePath = path.join(cwd, '.gitignore');
-    let contents = '';
-    try {
-      contents = await fs.readFile(gitignorePath, 'utf8');
-    } catch {
-      // file doesn't exist yet
-    }
-
-    if (contents.includes('.ide-comments')) return;
-
-    const choice = await vscode.window.showInformationMessage(
-      'Comments are saved to .ide-comments/comments.json. Add it to .gitignore to keep comments local?',
-      'Add to .gitignore',
-      'Keep in repo',
+    vscode.window.showInformationMessage(
+      'CeramicMark: Comments saved to .ide-comments/ — commit this folder to share comments with your team.',
     );
-
-    if (choice === 'Add to .gitignore') {
-      const entry = '\n# CeramicMark\n.ide-comments/\n';
-      await fs.writeFile(gitignorePath, contents + entry, 'utf8');
-    }
   }
 
   private async sendAllComments(): Promise<void> {
