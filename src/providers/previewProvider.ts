@@ -240,7 +240,7 @@ export class PreviewProvider {
       vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview', 'index.css'),
     );
     const bgUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.context.extensionUri, 'images', 'cm_bg.png'),
+      vscode.Uri.joinPath(this.context.extensionUri, 'images', 'cm_bg.jpg'),
     );
     const sadUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this.context.extensionUri, 'images', 'cm_sad.svg'),
