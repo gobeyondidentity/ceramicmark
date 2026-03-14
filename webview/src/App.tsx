@@ -15,6 +15,7 @@ interface State {
   commentMode: boolean;
   pendingAnchor: Partial<ElementAnchor> | null;
   focusedCommentId: string | null;
+  focusCommentTs: number;
   currentPage: string;
   iframeReadyAt: number;
   unreadIds: Set<string>;
@@ -85,7 +86,7 @@ function reducer(state: State, action: Action): State {
     case 'CANCEL_PENDING':
       return { ...state, pendingAnchor: null };
     case 'FOCUS_COMMENT':
-      return { ...state, focusedCommentId: action.commentId };
+      return { ...state, focusedCommentId: action.commentId, focusCommentTs: Date.now() };
     case 'LOAD_MEMBERS':
       return { ...state, members: action.members };
     case 'MARK_READ': {
@@ -115,6 +116,7 @@ const initialState: State = {
   commentMode: false,
   pendingAnchor: null,
   focusedCommentId: null,
+  focusCommentTs: 0,
   currentPage: '/',
   iframeReadyAt: 0,
   unreadIds: new Set(),
@@ -267,6 +269,7 @@ export function App(): React.ReactElement {
           displayUrl={state.displayUrl}
           commentMode={state.commentMode}
           focusedComment={focusedComment}
+          focusCommentTs={state.focusCommentTs}
           currentPage={state.currentPage}
           iframeReadyAt={state.iframeReadyAt}
           comments={state.comments}

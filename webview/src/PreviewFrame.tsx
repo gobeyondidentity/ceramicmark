@@ -6,6 +6,7 @@ interface PreviewFrameProps {
   displayUrl: string;
   commentMode: boolean;
   focusedComment: Comment | null;
+  focusCommentTs: number;
   currentPage: string;
   iframeReadyAt: number;
   comments: Comment[];
@@ -17,6 +18,7 @@ export function PreviewFrame({
   displayUrl,
   commentMode,
   focusedComment,
+  focusCommentTs,
   currentPage,
   iframeReadyAt,
   comments,
@@ -103,36 +105,38 @@ export function PreviewFrame({
     }
   }, [iframeReadyAt]);
 
-  // Navigate to the comment's page, or highlight immediately if already there.
-  // When focus is cleared, tell the companion script to remove the highlight.
+  // Navigate to the comment's page (or highlight immediately if already there).
+  // Triggers on every FOCUS_COMMENT dispatch via focusCommentTs — this ensures
+  // re-clicking the same sidebar comment always re-navigates, even if focusedComment
+  // hasn't changed. Uses refs so the effect always sees the latest page + comment.
   useEffect(() => {
     if (!iframeUrl) return;
-    if (!focusedComment) {
+    const fc = focusedCommentRef.current;
+    if (!fc) {
       iframeRef.current?.contentWindow?.postMessage({ type: 'cm-clear-highlight' }, '*');
       return;
     }
-    const commentPage = focusedComment.anchor?.pageUrl ?? '/';
-    if (commentPage !== currentPage) {
-      // Change src — onLoad will send the highlight once the DOM is ready
+    const commentPage = fc.anchor?.pageUrl ?? '/';
+    if (commentPage !== currentPageRef.current) {
+      // Change src — handleIframeLoad will send markers + highlight once the DOM is ready
       if (iframeRef.current) {
         iframeRef.current.src = iframeUrl + commentPage;
       }
     } else {
-      // Already on the right page, DOM is ready — highlight now
+      // Already on the right page — highlight now
       iframeRef.current?.contentWindow?.postMessage(
         {
           type: 'cm-highlight-element',
-          elementId: focusedComment.anchor?.elementId,
-          testId: focusedComment.anchor?.testId,
-          tag: focusedComment.anchor?.tag,
-          text: focusedComment.anchor?.text,
-          cssPath: focusedComment.anchor?.cssPath,
+          elementId: fc.anchor?.elementId,
+          testId: fc.anchor?.testId,
+          tag: fc.anchor?.tag,
+          text: fc.anchor?.text,
+          cssPath: fc.anchor?.cssPath,
         },
         '*',
       );
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focusedComment]); // intentionally omits currentPage — only re-run on new focus
+  }, [focusCommentTs, iframeUrl]);
 
   // After iframe page load (MPA): DOM is ready, React has rendered — send all markers
   // and the focused comment highlight. Unfiltered so the companion script can match
