@@ -1,7 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { CommentForm } from './CommentForm.js';
-import { CommentThread } from './CommentThread.js';
-import type { Comment, ElementAnchor } from './types.js';
+import React, { useEffect, useRef } from 'react';
+import type { Comment } from './types.js';
 
 /** Convert a URL pathname to a friendly display label. e.g. "/" → "Homepage", "/user-profile" → "User Profile" */
 function pageLabel(url: string): string {
@@ -16,36 +14,31 @@ function pageLabel(url: string): string {
 
 interface CommentSidebarProps {
   comments: Comment[];
-  pendingAnchor: Partial<ElementAnchor> | null;
   memberNames: string[];
   currentBranch: string | null;
   currentPage: string;
   focusedCommentId: string | null;
   unreadIds: Set<string>;
-  onCancelPending: () => void;
   onFocusComment: (id: string) => void;
   onMarkRead: (id: string) => void;
 }
 
 export function CommentSidebar({
   comments,
-  pendingAnchor,
-  memberNames,
+  memberNames: _memberNames,
   currentBranch,
   currentPage,
   focusedCommentId,
   unreadIds,
-  onCancelPending,
   onFocusComment,
   onMarkRead,
 }: CommentSidebarProps): React.ReactElement {
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const focusedRef = useRef<HTMLButtonElement>(null);
 
-  // When a comment is focused from the extension sidebar, expand it
+  // Scroll focused comment into view when it changes
   useEffect(() => {
-    if (focusedCommentId) {
-      setExpandedId(focusedCommentId);
-      onMarkRead(focusedCommentId);
+    if (focusedCommentId && focusedRef.current) {
+      focusedRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
   }, [focusedCommentId]);
 
@@ -95,15 +88,6 @@ export function CommentSidebar({
           </span>
         )}
       </div>
-
-      {/* Pending comment form */}
-      {pendingAnchor && (
-        <CommentForm
-          anchor={pendingAnchor}
-          memberNames={memberNames}
-          onCancel={onCancelPending}
-        />
-      )}
 
       {/* Comment list */}
       <div className="flex-1 overflow-y-auto">
@@ -166,124 +150,102 @@ export function CommentSidebar({
                     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
                   })
                   .map((comment) => {
-                    const isExpanded = expandedId === comment.id;
+                    const isFocused = focusedCommentId === comment.id;
                     const isOffBranch = !!(
                       comment.branch && currentBranch && comment.branch !== currentBranch
                     );
                     const isUnread = unreadIds.has(comment.id);
 
                     return (
-                      <div key={comment.id}>
-                        {/* Comment card */}
-                        <button
-                          className="px-3 py-2 w-full text-left"
-                          style={{
-                            background: isExpanded
-                              ? 'rgba(255,111,0,0.08)'
-                              : 'transparent',
-                            borderBottom: '1px solid var(--vscode-panel-border, #333)',
-                            opacity: isOffBranch ? 0.5 : 1,
-                            cursor: 'pointer',
-                          }}
-                          aria-expanded={isExpanded}
-                          aria-label={`Comment by ${comment.author.name}: ${comment.body}`}
-                          onClick={() => {
-                            const next = isExpanded ? null : comment.id;
-                            setExpandedId(next);
-                            if (next) {
-                              onFocusComment(next);
-                              onMarkRead(next);
-                            }
-                          }}
-                        >
-                          {/* Element label row */}
-                          <div className="flex items-center gap-1 mb-0.5 min-w-0">
-                            {isUnread && (
-                              <span
-                                aria-label="Unread"
-                                style={{
-                                  width: '6px',
-                                  height: '6px',
-                                  borderRadius: '50%',
-                                  background: '#FF6F00',
-                                  flexShrink: 0,
-                                  display: 'inline-block',
-                                }}
-                              />
-                            )}
+                      <button
+                        key={comment.id}
+                        ref={isFocused ? focusedRef : undefined}
+                        className="px-3 py-2 w-full text-left"
+                        style={{
+                          background: isFocused ? 'rgba(255,111,0,0.08)' : 'transparent',
+                          borderBottom: '1px solid var(--vscode-panel-border, #333)',
+                          opacity: isOffBranch ? 0.5 : 1,
+                          cursor: 'pointer',
+                        }}
+                        aria-label={`Comment by ${comment.author.name}: ${comment.body}`}
+                        onClick={() => {
+                          onFocusComment(comment.id);
+                          onMarkRead(comment.id);
+                        }}
+                      >
+                        {/* Element label row */}
+                        <div className="flex items-center gap-1 mb-0.5 min-w-0">
+                          {isUnread && (
                             <span
-                              className="text-xs truncate"
-                              style={{ color: '#FF6F00', opacity: 0.8 }}
-                              title={comment.anchor?.label}
-                            >
-                              {comment.anchor?.label}
-                            </span>
-                            {comment.status === 'resolved' && (
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="10"
-                                height="10"
-                                fill="#22c55e"
-                                viewBox="0 0 16 16"
-                                className="shrink-0 ml-auto"
-                                aria-label="Resolved"
-                                role="img"
-                              >
-                                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z" />
-                              </svg>
-                            )}
-                          </div>
-
-                          {/* Body preview */}
-                          <p
+                              aria-label="Unread"
+                              style={{
+                                width: '6px',
+                                height: '6px',
+                                borderRadius: '50%',
+                                background: '#FF6F00',
+                                flexShrink: 0,
+                                display: 'inline-block',
+                              }}
+                            />
+                          )}
+                          <span
                             className="text-xs truncate"
-                            style={{ color: 'var(--vscode-foreground)', opacity: 0.7 }}
+                            style={{ color: '#FF6F00', opacity: 0.8 }}
+                            title={comment.anchor?.label}
                           >
-                            {comment.body}
-                          </p>
+                            {comment.anchor?.label}
+                          </span>
+                          {comment.status === 'resolved' && (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="10"
+                              height="10"
+                              fill="#22c55e"
+                              viewBox="0 0 16 16"
+                              className="shrink-0 ml-auto"
+                              aria-label="Resolved"
+                              role="img"
+                            >
+                              <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z" />
+                            </svg>
+                          )}
+                        </div>
 
-                          {/* Meta */}
-                          <div className="flex items-center gap-2 mt-1 min-w-0">
+                        {/* Body preview */}
+                        <p
+                          className="text-xs truncate"
+                          style={{ color: 'var(--vscode-foreground)', opacity: 0.7 }}
+                        >
+                          {comment.body}
+                        </p>
+
+                        {/* Meta */}
+                        <div className="flex items-center gap-2 mt-1 min-w-0">
+                          <span
+                            className="text-xs opacity-40 truncate"
+                            style={{ color: 'var(--vscode-foreground)' }}
+                          >
+                            {comment.author.name}
+                          </span>
+                          {comment.replies.length > 0 && (
                             <span
-                              className="text-xs opacity-40 truncate"
+                              className="text-xs opacity-40 shrink-0"
                               style={{ color: 'var(--vscode-foreground)' }}
                             >
-                              {comment.author.name}
+                              · {comment.replies.length}{' '}
+                              {comment.replies.length !== 1 ? 'replies' : 'reply'}
                             </span>
-                            {comment.replies.length > 0 && (
-                              <span
-                                className="text-xs opacity-40 shrink-0"
-                                style={{ color: 'var(--vscode-foreground)' }}
-                              >
-                                · {comment.replies.length}{' '}
-                                {comment.replies.length !== 1 ? 'replies' : 'reply'}
-                              </span>
-                            )}
-                            {isOffBranch && (
-                              <span
-                                className="text-xs opacity-30 shrink-0 ml-auto truncate"
-                                style={{ color: 'var(--vscode-foreground)' }}
-                              >
-                                {comment.branch}
-                              </span>
-                            )}
-                          </div>
-                        </button>
-
-                        {/* Expanded thread */}
-                        {isExpanded && (
-                          <div
-                            className="px-2 py-2"
-                            style={{ background: 'var(--vscode-editor-background, #1e1e1e)' }}
-                          >
-                            <CommentThread
-                              comment={comment}
-                              memberNames={memberNames}
-                              onClose={() => setExpandedId(null)}
-                            />
-                          </div>
-                        )}
-                      </div>
+                          )}
+                          {isOffBranch && (
+                            <span
+                              className="text-xs opacity-30 shrink-0 ml-auto truncate"
+                              style={{ color: 'var(--vscode-foreground)' }}
+                            >
+                              {comment.branch}
+                            </span>
+                          )}
+                        </div>
+                      </button>
                     );
                   })}
               </div>

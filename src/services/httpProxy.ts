@@ -134,6 +134,8 @@ const COMPANION_SCRIPT = `<script>
     el.style.zIndex = '99999';
     el.style.boxShadow = '0 0 0 4px rgba(255,111,0,0.25)';
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    var r = el.getBoundingClientRect();
+    window.parent.postMessage({ type: 'cm-element-positioned', x: Math.round(r.left + r.width / 2), y: Math.round(r.top) }, '*');
     // JS-driven outline pulse — reliable across VS Code webview iframe environments
     var flashEl = el;
     var pulseSteps = ['4px solid #FF6F00', '2px solid rgba(255,111,0,0.25)', '4px solid #FF6F00', '2px solid #FF6F00'];
@@ -275,6 +277,8 @@ const COMPANION_SCRIPT = `<script>
       cssPath: getCssPath(el),
       pathname: window.location.pathname + window.location.search + window.location.hash,
       title: document.title,
+      x: e.clientX,
+      y: e.clientY,
     }, '*');
   }, true);
 

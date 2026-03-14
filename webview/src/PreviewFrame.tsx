@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { CommentThread } from './CommentThread.js';
-import type { Comment } from './types.js';
+import { CommentForm } from './CommentForm.js';
+import type { Comment, ElementAnchor } from './types.js';
 
 interface PreviewFrameProps {
   iframeUrl: string;
@@ -8,6 +9,8 @@ interface PreviewFrameProps {
   commentMode: boolean;
   focusedComment: Comment | null;
   focusedPinPosition: { x: number; y: number } | null;
+  pendingAnchor: Partial<ElementAnchor> | null;
+  pendingPosition: { x: number; y: number } | null;
   focusCommentTs: number;
   currentPage: string;
   currentTitle: string;
@@ -17,6 +20,7 @@ interface PreviewFrameProps {
   connectionFailed: boolean;
   onCommentModeExit: () => void;
   onClearFocus: () => void;
+  onCancelPending: () => void;
   onRetryUrl: () => void;
 }
 
@@ -26,6 +30,8 @@ export function PreviewFrame({
   commentMode,
   focusedComment,
   focusedPinPosition,
+  pendingAnchor,
+  pendingPosition,
   focusCommentTs,
   currentPage,
   currentTitle,
@@ -35,6 +41,7 @@ export function PreviewFrame({
   connectionFailed,
   onCommentModeExit,
   onClearFocus,
+  onCancelPending,
   onRetryUrl,
 }: PreviewFrameProps): React.ReactElement {
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -308,6 +315,38 @@ export function PreviewFrame({
               comment={focusedComment}
               memberNames={memberNames}
               onClose={onClearFocus}
+            />
+          </div>
+        );
+      })()}
+
+      {/* New comment form popover */}
+      {pendingAnchor && !connectionFailed && (() => {
+        const containerW = containerRef.current?.offsetWidth ?? 600;
+        const containerH = containerRef.current?.offsetHeight ?? 400;
+        const POPOVER_W = 296;
+        const POPOVER_H = 260;
+        const pos = pendingPosition;
+        let popoverStyle: React.CSSProperties = { position: 'absolute', zIndex: 20, width: `${POPOVER_W}px` };
+        if (pos) {
+          const flipX = pos.x + POPOVER_W + 16 > containerW;
+          const flipY = pos.y + POPOVER_H + 8 > containerH;
+          popoverStyle = {
+            ...popoverStyle,
+            left: flipX ? undefined : pos.x + 12,
+            right: flipX ? containerW - pos.x + 12 : undefined,
+            top: flipY ? undefined : pos.y,
+            bottom: flipY ? containerH - pos.y : undefined,
+          };
+        } else {
+          popoverStyle = { ...popoverStyle, top: 16, right: 16 };
+        }
+        return (
+          <div style={popoverStyle}>
+            <CommentForm
+              anchor={pendingAnchor}
+              memberNames={memberNames}
+              onCancel={onCancelPending}
             />
           </div>
         );

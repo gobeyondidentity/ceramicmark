@@ -17,6 +17,7 @@ interface State {
   focusedCommentId: string | null;
   focusedPinPosition: { x: number; y: number } | null;
   focusCommentTs: number;
+  pendingPosition: { x: number; y: number } | null;
   currentPage: string;
   currentTitle: string;
   iframeReadyAt: number;
@@ -35,10 +36,11 @@ type Action =
   | { type: 'UPDATE_COMMENT'; comment: Comment; identityEmail: string | null }
   | { type: 'DELETE_COMMENT'; commentId: string }
   | { type: 'TOGGLE_COMMENT_MODE' }
-  | { type: 'ELEMENT_SELECTED'; anchor: Partial<ElementAnchor> }
+  | { type: 'ELEMENT_SELECTED'; anchor: Partial<ElementAnchor>; position?: { x: number; y: number } }
   | { type: 'CANCEL_PENDING' }
   | { type: 'FOCUS_COMMENT'; commentId: string; position?: { x: number; y: number } }
   | { type: 'CLEAR_FOCUS' }
+  | { type: 'SET_FOCUSED_POSITION'; x: number; y: number }
   | { type: 'LOAD_MEMBERS'; members: Member[] }
   | { type: 'MARK_READ'; commentId: string }
   | { type: 'SET_BRANCH'; branch: string }
@@ -95,13 +97,15 @@ function reducer(state: State, action: Action): State {
     case 'TOGGLE_COMMENT_MODE':
       return { ...state, commentMode: !state.commentMode, pendingAnchor: null };
     case 'ELEMENT_SELECTED':
-      return { ...state, pendingAnchor: action.anchor };
+      return { ...state, pendingAnchor: action.anchor, pendingPosition: action.position ?? null, focusedCommentId: null, focusedPinPosition: null };
     case 'CANCEL_PENDING':
-      return { ...state, pendingAnchor: null };
+      return { ...state, pendingAnchor: null, pendingPosition: null };
     case 'FOCUS_COMMENT':
-      return { ...state, focusedCommentId: action.commentId, focusedPinPosition: action.position ?? null, focusCommentTs: Date.now() };
+      return { ...state, focusedCommentId: action.commentId, focusedPinPosition: action.position ?? null, pendingAnchor: null, pendingPosition: null, focusCommentTs: Date.now() };
     case 'CLEAR_FOCUS':
-      return { ...state, focusedCommentId: null, focusedPinPosition: null, focusCommentTs: Date.now() };
+      return { ...state, focusedCommentId: null, focusedPinPosition: null, pendingAnchor: null, pendingPosition: null, focusCommentTs: Date.now() };
+    case 'SET_FOCUSED_POSITION':
+      return { ...state, focusedPinPosition: { x: action.x, y: action.y } };
     case 'LOAD_MEMBERS':
       return { ...state, members: action.members };
     case 'MARK_READ': {
@@ -135,6 +139,7 @@ const initialState: State = {
   focusedCommentId: null,
   focusedPinPosition: null,
   focusCommentTs: 0,
+  pendingPosition: null,
   currentPage: '/',
   currentTitle: '',
   iframeReadyAt: 0,
@@ -186,7 +191,12 @@ export function App(): React.ReactElement {
             text: message.text || undefined,
             cssPath: message.cssPath || undefined,
           },
+          position: message.x != null ? { x: message.x as number, y: message.y as number } : undefined,
         });
+        return;
+      }
+      if (message.type === 'cm-element-positioned') {
+        dispatch({ type: 'SET_FOCUSED_POSITION', x: message.x as number, y: message.y as number });
         return;
       }
       if (message.type === 'cm-marker-clicked') {
@@ -307,6 +317,8 @@ export function App(): React.ReactElement {
           commentMode={state.commentMode}
           focusedComment={focusedComment}
           focusedPinPosition={state.focusedPinPosition}
+          pendingAnchor={state.pendingAnchor}
+          pendingPosition={state.pendingPosition}
           focusCommentTs={state.focusCommentTs}
           currentPage={state.currentPage}
           currentTitle={state.currentTitle}
@@ -316,6 +328,7 @@ export function App(): React.ReactElement {
           connectionFailed={state.connectionFailed}
           onCommentModeExit={() => dispatch({ type: 'TOGGLE_COMMENT_MODE' })}
           onClearFocus={() => dispatch({ type: 'CLEAR_FOCUS' })}
+          onCancelPending={() => dispatch({ type: 'CANCEL_PENDING' })}
           onRetryUrl={() => document.getElementById('toolbar-url-input')?.focus()}
         />
       </div>
@@ -324,13 +337,11 @@ export function App(): React.ReactElement {
       {state.sidebarOpen && (
         <CommentSidebar
           comments={state.comments}
-          pendingAnchor={state.pendingAnchor}
           memberNames={memberNames}
           currentBranch={state.currentBranch}
           currentPage={state.currentPage}
           focusedCommentId={state.focusedCommentId}
           unreadIds={state.unreadIds}
-          onCancelPending={() => dispatch({ type: 'CANCEL_PENDING' })}
           onFocusComment={(id) => dispatch({ type: 'FOCUS_COMMENT', commentId: id })}
           onMarkRead={(id) => dispatch({ type: 'MARK_READ', commentId: id })}
         />
