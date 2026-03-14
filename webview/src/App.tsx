@@ -16,6 +16,7 @@ interface State {
   pendingAnchor: Partial<ElementAnchor> | null;
   focusedCommentId: string | null;
   currentPage: string;
+  iframeReadyAt: number;
   unreadIds: Set<string>;
   currentBranch: string | null;
   sidebarOpen: boolean;
@@ -95,7 +96,7 @@ function reducer(state: State, action: Action): State {
     case 'SET_BRANCH':
       return { ...state, currentBranch: action.branch };
     case 'IFRAME_NAVIGATED':
-      return { ...state, currentPage: action.pathname };
+      return { ...state, currentPage: action.pathname, iframeReadyAt: Date.now() };
     case 'TOGGLE_SIDEBAR':
       return { ...state, sidebarOpen: !state.sidebarOpen };
     case 'SET_SIDEBAR':
@@ -115,6 +116,7 @@ const initialState: State = {
   pendingAnchor: null,
   focusedCommentId: null,
   currentPage: '/',
+  iframeReadyAt: 0,
   unreadIds: new Set(),
   currentBranch: null,
   sidebarOpen: true,
@@ -160,7 +162,8 @@ export function App(): React.ReactElement {
       if (message.type === 'cm-navigate') {
         try {
           const parsed = new URL(message.pathname, 'http://x');
-          dispatch({ type: 'IFRAME_NAVIGATED', pathname: parsed.pathname + parsed.search + parsed.hash });
+          const page = parsed.pathname + parsed.search + parsed.hash;
+          dispatch({ type: 'IFRAME_NAVIGATED', pathname: page });
         } catch {
           dispatch({ type: 'IFRAME_NAVIGATED', pathname: message.pathname });
         }
@@ -265,6 +268,7 @@ export function App(): React.ReactElement {
           commentMode={state.commentMode}
           focusedComment={focusedComment}
           currentPage={state.currentPage}
+          iframeReadyAt={state.iframeReadyAt}
           comments={state.comments}
           onCommentModeExit={() => dispatch({ type: 'TOGGLE_COMMENT_MODE' })}
         />

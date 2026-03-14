@@ -8,6 +8,8 @@ const COMPANION_SCRIPT = `<script>
   var _cmHighlighted = null;
   var _cmPrevOutline = '';
   var _cmMarkers = [];
+  var _cmLastComments = [];
+  var _cmRendering = false;
 
   function clearMarkers() {
     for (var i = 0; i < _cmMarkers.length; i++) {
@@ -19,6 +21,8 @@ const COMPANION_SCRIPT = `<script>
   }
 
   function renderMarkers(comments) {
+    _cmRendering = true;
+    _cmLastComments = comments;
     clearMarkers();
     var groups = {};
     for (var i = 0; i < comments.length; i++) {
@@ -41,7 +45,9 @@ const COMPANION_SCRIPT = `<script>
         }
       }
       if (!found && a.cssPath) { try { found = document.querySelector(a.cssPath); } catch(e) {} }
-      if (!found || found === document.body || found === document.documentElement) continue;
+      if (!found || found === document.body || found === document.documentElement) {
+        continue;
+      }
       var badge = document.createElement('span');
       badge.setAttribute('data-cm-badge', '1');
       badge.setAttribute('data-cm-comment-id', g.firstId);
@@ -53,6 +59,30 @@ const COMPANION_SCRIPT = `<script>
       found.appendChild(badge);
       _cmMarkers.push({ el: found, badge: badge, prevPos: prevPos, wasStatic: computedPos === 'static' });
     }
+    _cmRendering = false;
+  }
+
+  // Re-apply markers when the DOM changes (e.g. React re-renders tabs/views without a URL change)
+  var _cmMutationTimer = null;
+  var _cmObserver = new MutationObserver(function(mutations) {
+    if (_cmRendering) return;
+    if (_cmLastComments.length === 0) return;
+    // Ignore mutations caused solely by our own badge insertions/removals
+    for (var i = 0; i < mutations.length; i++) {
+      var nodes = mutations[i].addedNodes;
+      for (var j = 0; j < nodes.length; j++) {
+        if (nodes[j].nodeType === 1 && nodes[j].getAttribute && nodes[j].getAttribute('data-cm-badge')) return;
+      }
+    }
+    clearTimeout(_cmMutationTimer);
+    _cmMutationTimer = setTimeout(function() { renderMarkers(_cmLastComments); }, 300);
+  });
+  if (document.body) {
+    _cmObserver.observe(document.body, { childList: true, subtree: true });
+  } else {
+    document.addEventListener('DOMContentLoaded', function() {
+      _cmObserver.observe(document.body, { childList: true, subtree: true });
+    });
   }
 
   function getCssPath(el) {
@@ -230,14 +260,25 @@ const COMPANION_SCRIPT = `<script>
     }, '*');
   }
 
-  var _push = history.pushState.bind(history);
-  history.pushState = function() { _push.apply(history, arguments); notifyNav(); };
-  var _replace = history.replaceState.bind(history);
-  history.replaceState = function() { _replace.apply(history, arguments); notifyNav(); };
-  window.addEventListener('popstate', notifyNav);
-  window.addEventListener('hashchange', notifyNav);
+  // For SPA client-side navigation: defer 100ms so the framework has rendered new content.
+  // requestAnimationFrame is avoided because it can be throttled in VS Code webview iframes.
+  function notifyNavDeferred() {
+    setTimeout(notifyNav, 100);
+  }
 
-  notifyNav();
+  var _push = history.pushState.bind(history);
+  history.pushState = function() { _push.apply(history, arguments); notifyNavDeferred(); };
+  var _replace = history.replaceState.bind(history);
+  history.replaceState = function() { _replace.apply(history, arguments); notifyNavDeferred(); };
+  window.addEventListener('popstate', notifyNavDeferred);
+  window.addEventListener('hashchange', notifyNavDeferred);
+
+  // For initial MPA page load: wait until DOMContentLoaded so body elements exist
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', notifyNav);
+  } else {
+    notifyNav();
+  }
 })();
 </script>`;
 
@@ -310,6 +351,15 @@ export class HttpProxy {
         proxyRes.on('data', (chunk: Buffer) => chunks.push(chunk));
         proxyRes.on('end', () => {
           let body = Buffer.concat(chunks).toString('utf8');
+          // Rewrite absolute target-origin URLs in HTML attributes to relative paths
+          // so that iframe navigation stays within the proxy rather than bypassing it.
+          // e.g. href="http://localhost:5173/about" → href="/about"
+          const targetOrigin = target.protocol + '//' + target.host;
+          const escapedOrigin = targetOrigin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          body = body.replace(
+            new RegExp('((?:href|src|action)=["\'])' + escapedOrigin, 'g'),
+            '$1',
+          );
           if (body.includes('</body>')) {
             body = body.replace('</body>', COMPANION_SCRIPT + '</body>');
           } else {
