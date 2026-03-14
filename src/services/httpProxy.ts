@@ -466,7 +466,7 @@ export class HttpProxy {
 <div class="title">Waiting for dev server<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></div>
 <div class="sub">Will connect automatically when ready at:</div>
 <div class="url">${targetHref}</div>
-</div><script>setTimeout(function(){location.reload();},2000);</script></body></html>`;
+</div><script>window.parent.postMessage({type:'cm-connection-failed'},\'*\');setTimeout(function(){location.reload();},2000);</script></body></html>`;
       const buf = Buffer.from(errorHtml, 'utf8');
       res.writeHead(502, { 'content-type': 'text/html; charset=utf-8', 'content-length': buf.byteLength });
       res.end(buf);

@@ -22,6 +22,7 @@ interface State {
   unreadIds: Set<string>;
   currentBranch: string | null;
   sidebarOpen: boolean;
+  connectionFailed: boolean;
 }
 
 type Action =
@@ -41,14 +42,15 @@ type Action =
   | { type: 'SET_BRANCH'; branch: string }
   | { type: 'IFRAME_NAVIGATED'; pathname: string; title?: string }
   | { type: 'TOGGLE_SIDEBAR' }
-  | { type: 'SET_SIDEBAR'; open: boolean };
+  | { type: 'SET_SIDEBAR'; open: boolean }
+  | { type: 'CONNECTION_FAILED' };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'SET_URL':
-      return { ...state, displayUrl: action.url, iframeUrl: '' };
+      return { ...state, displayUrl: action.url, iframeUrl: '', connectionFailed: false };
     case 'SET_PROXY_URL':
-      return { ...state, iframeUrl: action.iframeUrl };
+      return { ...state, iframeUrl: action.iframeUrl, connectionFailed: false };
     case 'SET_IDENTITY':
       return { ...state, identity: action.author };
     case 'LOAD_COMMENTS':
@@ -98,7 +100,9 @@ function reducer(state: State, action: Action): State {
     case 'SET_BRANCH':
       return { ...state, currentBranch: action.branch };
     case 'IFRAME_NAVIGATED':
-      return { ...state, currentPage: action.pathname, currentTitle: action.title ?? state.currentTitle, iframeReadyAt: Date.now() };
+      return { ...state, currentPage: action.pathname, currentTitle: action.title ?? state.currentTitle, iframeReadyAt: Date.now(), connectionFailed: false };
+    case 'CONNECTION_FAILED':
+      return { ...state, connectionFailed: true };
     case 'TOGGLE_SIDEBAR':
       return { ...state, sidebarOpen: !state.sidebarOpen };
     case 'SET_SIDEBAR':
@@ -124,6 +128,7 @@ const initialState: State = {
   unreadIds: new Set(),
   currentBranch: null,
   sidebarOpen: true,
+  connectionFailed: false,
 };
 
 export function App(): React.ReactElement {
@@ -144,6 +149,11 @@ export function App(): React.ReactElement {
       if (!message || typeof message.type !== 'string') return;
 
       // Messages from the iframe companion script
+      if (message.type === 'cm-connection-failed') {
+        dispatch({ type: 'CONNECTION_FAILED' });
+        return;
+      }
+
       if (message.type === 'cm-element-selected') {
         dispatch({
           type: 'ELEMENT_SELECTED',
@@ -277,7 +287,9 @@ export function App(): React.ReactElement {
           currentTitle={state.currentTitle}
           iframeReadyAt={state.iframeReadyAt}
           comments={state.comments}
+          connectionFailed={state.connectionFailed}
           onCommentModeExit={() => dispatch({ type: 'TOGGLE_COMMENT_MODE' })}
+          onRetryUrl={() => document.getElementById('toolbar-url-input')?.focus()}
         />
       </div>
 
