@@ -42,7 +42,7 @@ export class PreviewProvider {
       },
     );
 
-    this.panel.iconPath = vscode.Uri.joinPath(this.context.extensionUri, 'images', 'cm_icon.svg');
+    this.panel.iconPath = vscode.Uri.joinPath(this.context.extensionUri, 'images', 'cm_tab_icon.svg');
     this.panel.webview.html = this.getHtml(this.panel.webview);
 
     this.panel.webview.onDidReceiveMessage(

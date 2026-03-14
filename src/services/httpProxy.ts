@@ -44,8 +44,8 @@ const COMPANION_SCRIPT = `<script>
       if (!found || found === document.body || found === document.documentElement) continue;
       var badge = document.createElement('span');
       badge.setAttribute('data-cm-badge', '1');
-      badge.style.cssText = 'position:absolute;top:-6px;right:-6px;min-width:14px;height:14px;background:#FF6F00;color:#fff;border-radius:7px;font-size:9px;font-weight:bold;display:inline-flex;align-items:center;justify-content:center;z-index:99999;pointer-events:none;line-height:1;padding:0 2px;box-shadow:0 1px 3px rgba(0,0,0,0.5);';
-      badge.textContent = g.count > 9 ? '9+' : String(g.count);
+      badge.style.cssText = 'position:absolute;top:-8px;right:-8px;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;z-index:99999;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.6));';
+      badge.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#FF6F00" viewBox="0 0 16 16"><path d="M8 15c4.418 0 8-3.134 8-7s-3.582-7-8-7-8 3.134-8 7c0 1.76.743 3.37 1.97 4.6-.097 1.016-.417 2.13-.771 2.966-.079.186.074.394.273.362 2.256-.37 3.597-.938 4.18-1.234A9.06 9.06 0 0 0 8 15z"/></svg>';
       var prevPos = found.style.position;
       var computedPos = window.getComputedStyle(found).position;
       if (computedPos === 'static') found.style.position = 'relative';
@@ -168,11 +168,18 @@ const COMPANION_SCRIPT = `<script>
           found.scrollIntoView({ behavior: 'smooth', block: 'center' });
           var prev = found.style.outline;
           var prevShadow = found.style.boxShadow;
+          var prevZ = found.style.zIndex;
+          var prevPos = found.style.position;
+          var computedPos = window.getComputedStyle(found).position;
+          if (computedPos === 'static') found.style.position = 'relative';
+          found.style.zIndex = '99999';
           found.style.outline = '2px solid #FF6F00';
           found.style.boxShadow = '0 0 0 4px rgba(255,111,0,0.25)';
           setTimeout(function() {
             found.style.outline = prev;
             found.style.boxShadow = prevShadow;
+            found.style.zIndex = prevZ;
+            if (computedPos === 'static') found.style.position = prevPos;
           }, 2000);
         } else if (attemptsLeft > 0) {
           setTimeout(function() { tryHighlight(attemptsLeft - 1); }, 300);

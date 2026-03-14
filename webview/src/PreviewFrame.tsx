@@ -64,19 +64,15 @@ export function PreviewFrame({
 
   // Navigate to the comment's page, or highlight immediately if already there
   useEffect(() => {
-    console.log('[CM] focusedComment effect fired', { focusedComment, iframeUrl, currentPage });
     if (!focusedComment || !iframeUrl) return;
     const commentPage = focusedComment.anchor?.pageUrl ?? '/';
-    console.log('[CM] commentPage:', commentPage, 'currentPage:', currentPage);
     if (commentPage !== currentPage) {
       // Change src — onLoad will send the highlight once the DOM is ready
-      console.log('[CM] navigating iframe to', iframeUrl + commentPage);
       if (iframeRef.current) {
         iframeRef.current.src = iframeUrl + commentPage;
       }
     } else {
       // Already on the right page, DOM is ready — highlight now
-      console.log('[CM] same page, sending highlight now', focusedComment.anchor);
       iframeRef.current?.contentWindow?.postMessage(
         {
           type: 'cm-highlight-element',
@@ -96,7 +92,6 @@ export function PreviewFrame({
   // Re-send markers and, if a comment is focused, its highlight.
   const handleIframeLoad = () => {
     const win = iframeRef.current?.contentWindow;
-    console.log('[CM] iframe onLoad fired, focusedComment:', focusedCommentRef.current);
     if (!win) return;
 
     const markerData = commentsRef.current.map((c) => ({
@@ -110,7 +105,6 @@ export function PreviewFrame({
     win.postMessage({ type: 'cm-update-markers', comments: markerData }, '*');
 
     const fc = focusedCommentRef.current;
-    console.log('[CM] onLoad sending highlight for:', fc?.anchor);
     if (fc) {
       win.postMessage(
         {
