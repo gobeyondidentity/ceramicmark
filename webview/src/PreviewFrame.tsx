@@ -87,11 +87,30 @@ export function PreviewFrame({
       { type: 'cm-update-markers', comments: markerData },
       '*',
     );
+    const fc = focusedCommentRef.current;
+    if (fc) {
+      iframeRef.current?.contentWindow?.postMessage(
+        {
+          type: 'cm-highlight-element',
+          elementId: fc.anchor?.elementId,
+          testId: fc.anchor?.testId,
+          tag: fc.anchor?.tag,
+          text: fc.anchor?.text,
+          cssPath: fc.anchor?.cssPath,
+        },
+        '*',
+      );
+    }
   }, [iframeReadyAt]);
 
-  // Navigate to the comment's page, or highlight immediately if already there
+  // Navigate to the comment's page, or highlight immediately if already there.
+  // When focus is cleared, tell the companion script to remove the highlight.
   useEffect(() => {
-    if (!focusedComment || !iframeUrl) return;
+    if (!iframeUrl) return;
+    if (!focusedComment) {
+      iframeRef.current?.contentWindow?.postMessage({ type: 'cm-clear-highlight' }, '*');
+      return;
+    }
     const commentPage = focusedComment.anchor?.pageUrl ?? '/';
     if (commentPage !== currentPage) {
       // Change src — onLoad will send the highlight once the DOM is ready

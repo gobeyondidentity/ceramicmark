@@ -10,6 +10,14 @@ const COMPANION_SCRIPT = `<script>
   var _cmMarkers = [];
   var _cmLastComments = [];
   var _cmRendering = false;
+  // Persistent focus highlight state
+  var _cmFocusedHighlight = null;
+  var _cmFocusedEl = null;
+  var _cmFocusedPrevOutline = '';
+  var _cmFocusedPrevShadow = '';
+  var _cmFocusedPrevZ = '';
+  var _cmFocusedPrevPos = '';
+  var _cmFocusedWasStatic = false;
 
   function clearMarkers() {
     for (var i = 0; i < _cmMarkers.length; i++) {
@@ -75,7 +83,10 @@ const COMPANION_SCRIPT = `<script>
       }
     }
     clearTimeout(_cmMutationTimer);
-    _cmMutationTimer = setTimeout(function() { renderMarkers(_cmLastComments); }, 300);
+    _cmMutationTimer = setTimeout(function() {
+      renderMarkers(_cmLastComments);
+      if (_cmFocusedHighlight) tryFocusHighlight(1);
+    }, 300);
   });
   if (document.body) {
     _cmObserver.observe(document.body, { childList: true, subtree: true });
@@ -83,6 +94,56 @@ const COMPANION_SCRIPT = `<script>
     document.addEventListener('DOMContentLoaded', function() {
       _cmObserver.observe(document.body, { childList: true, subtree: true });
     });
+  }
+
+  function clearFocusHighlight() {
+    if (!_cmFocusedEl) return;
+    _cmFocusedEl.style.outline = _cmFocusedPrevOutline;
+    _cmFocusedEl.style.boxShadow = _cmFocusedPrevShadow;
+    _cmFocusedEl.style.zIndex = _cmFocusedPrevZ;
+    if (_cmFocusedWasStatic) _cmFocusedEl.style.position = _cmFocusedPrevPos;
+    _cmFocusedEl = null;
+  }
+
+  function findFocusedEl() {
+    var d = _cmFocusedHighlight;
+    if (!d) return null;
+    var f = null;
+    if (d.elementId) f = document.getElementById(d.elementId);
+    if (!f && d.testId) f = document.querySelector('[data-testid="' + d.testId + '"]');
+    if (!f && d.tag && d.text) {
+      var els = document.querySelectorAll(d.tag);
+      for (var i = 0; i < els.length; i++) {
+        if ((els[i].textContent || '').trim().indexOf(d.text) !== -1) { f = els[i]; break; }
+      }
+    }
+    if (!f && d.cssPath) { try { f = document.querySelector(d.cssPath); } catch(ex) {} }
+    return f;
+  }
+
+  function applyFocusHighlight(el) {
+    clearFocusHighlight();
+    _cmFocusedEl = el;
+    _cmFocusedPrevOutline = el.style.outline;
+    _cmFocusedPrevShadow = el.style.boxShadow;
+    _cmFocusedPrevZ = el.style.zIndex;
+    _cmFocusedPrevPos = el.style.position;
+    var computedPos = window.getComputedStyle(el).position;
+    _cmFocusedWasStatic = computedPos === 'static';
+    if (_cmFocusedWasStatic) el.style.position = 'relative';
+    el.style.zIndex = '99999';
+    el.style.outline = '2px solid #FF6F00';
+    el.style.boxShadow = '0 0 0 4px rgba(255,111,0,0.25)';
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function tryFocusHighlight(attemptsLeft) {
+    var found = findFocusedEl();
+    if (found) {
+      applyFocusHighlight(found);
+    } else if (attemptsLeft > 0) {
+      setTimeout(function() { tryFocusHighlight(attemptsLeft - 1); }, 300);
+    }
   }
 
   function getCssPath(el) {
@@ -190,44 +251,14 @@ const COMPANION_SCRIPT = `<script>
     }
 
     if (e.data.type === 'cm-highlight-element') {
-      var hlData = e.data;
-      function findEl() {
-        var f = null;
-        if (hlData.elementId) f = document.getElementById(hlData.elementId);
-        if (!f && hlData.testId) f = document.querySelector('[data-testid="' + hlData.testId + '"]');
-        if (!f && hlData.tag && hlData.text) {
-          var els = document.querySelectorAll(hlData.tag);
-          for (var i = 0; i < els.length; i++) {
-            if ((els[i].textContent || '').trim().indexOf(hlData.text) !== -1) { f = els[i]; break; }
-          }
-        }
-        if (!f && hlData.cssPath) { try { f = document.querySelector(hlData.cssPath); } catch(e) {} }
-        return f;
-      }
-      function tryHighlight(attemptsLeft) {
-        var found = findEl();
-        if (found) {
-          found.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          var prev = found.style.outline;
-          var prevShadow = found.style.boxShadow;
-          var prevZ = found.style.zIndex;
-          var prevPos = found.style.position;
-          var computedPos = window.getComputedStyle(found).position;
-          if (computedPos === 'static') found.style.position = 'relative';
-          found.style.zIndex = '99999';
-          found.style.outline = '2px solid #FF6F00';
-          found.style.boxShadow = '0 0 0 4px rgba(255,111,0,0.25)';
-          setTimeout(function() {
-            found.style.outline = prev;
-            found.style.boxShadow = prevShadow;
-            found.style.zIndex = prevZ;
-            if (computedPos === 'static') found.style.position = prevPos;
-          }, 2000);
-        } else if (attemptsLeft > 0) {
-          setTimeout(function() { tryHighlight(attemptsLeft - 1); }, 300);
-        }
-      }
-      tryHighlight(6); // retry up to 6×300ms = 1.8s to allow SPA to render
+      _cmFocusedHighlight = e.data;
+      tryFocusHighlight(6);
+      return;
+    }
+
+    if (e.data.type === 'cm-clear-highlight') {
+      _cmFocusedHighlight = null;
+      clearFocusHighlight();
       return;
     }
 
