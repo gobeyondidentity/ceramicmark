@@ -321,7 +321,18 @@ function SplashScreen({ onUrlChange }: { onUrlChange: (url: string) => void }): 
         style={{ width: '282px', filter: 'brightness(0) invert(1)' }}
         dangerouslySetInnerHTML={{ __html: logoSvg.replace(/<svg /, '<svg width="282" ') }}
       />
-      <form onSubmit={handleSubmit} className="flex items-center gap-1 w-80" aria-label="Enter development server URL">
+      <form
+        onSubmit={handleSubmit}
+        className="flex items-center gap-1 w-80 rounded"
+        aria-label="Enter development server URL"
+        style={{
+          background: 'rgba(255,255,255,0.08)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          border: '1px solid rgba(255,255,255,0.2)',
+          padding: '2px 4px',
+        }}
+      >
         <label htmlFor="splash-url-input" className="sr-only">Development server URL</label>
         <input
           id="splash-url-input"
@@ -331,11 +342,11 @@ function SplashScreen({ onUrlChange }: { onUrlChange: (url: string) => void }): 
           onFocus={() => { if (!inputValue) setInputValue('http://localhost:'); }}
           placeholder="Enter Dev Server: ex http://localhost:3000 | Press Enter"
           autoFocus
-          className="flex-1 px-2 py-1 text-xs rounded min-w-0 outline-none placeholder-white"
+          className="flex-1 px-2 py-1 text-xs min-w-0 outline-none placeholder-white"
           style={{
             background: 'transparent',
             color: '#fff',
-            border: '1px solid rgba(255,255,255,0.6)',
+            border: 'none',
           }}
         />
       </form>
