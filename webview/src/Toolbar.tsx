@@ -85,7 +85,7 @@ export function Toolbar({
           style={{
             background: '#FF6F00',
             color: 'var(--vscode-titleBar-activeBackground, #3c3c3c)',
-            opacity: commentMode ? 1 : 0.4,
+            opacity: commentMode ? 0.5 : 1,
             border: '1px solid transparent',
           }}
         >

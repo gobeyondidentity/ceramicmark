@@ -145,6 +145,10 @@ export function App(): React.ReactElement {
         });
         return;
       }
+      if (message.type === 'cm-marker-clicked') {
+        dispatch({ type: 'FOCUS_COMMENT', commentId: message.commentId });
+        return;
+      }
       if (message.type === 'cm-navigate') {
         try {
           const parsed = new URL(message.pathname, 'http://x');

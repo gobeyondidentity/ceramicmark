@@ -25,7 +25,7 @@ const COMPANION_SCRIPT = `<script>
       var c = comments[i];
       if (c.status === 'resolved') continue;
       var key = (c.elementId || '') + '|' + (c.testId || '') + '|' + (c.tag || '') + '|' + (c.text || '').slice(0, 20);
-      if (!groups[key]) groups[key] = { anchor: c, count: 0 };
+      if (!groups[key]) groups[key] = { anchor: c, firstId: c.id, count: 0 };
       groups[key].count++;
     }
     for (var k in groups) {
@@ -44,8 +44,9 @@ const COMPANION_SCRIPT = `<script>
       if (!found || found === document.body || found === document.documentElement) continue;
       var badge = document.createElement('span');
       badge.setAttribute('data-cm-badge', '1');
-      badge.style.cssText = 'position:absolute;top:-8px;right:-8px;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;z-index:99999;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.6));';
-      badge.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#FF6F00" viewBox="0 0 16 16"><path d="M8 15c4.418 0 8-3.134 8-7s-3.582-7-8-7-8 3.134-8 7c0 1.76.743 3.37 1.97 4.6-.097 1.016-.417 2.13-.771 2.966-.079.186.074.394.273.362 2.256-.37 3.597-.938 4.18-1.234A9.06 9.06 0 0 0 8 15z"/></svg>';
+      badge.setAttribute('data-cm-comment-id', g.firstId);
+      badge.style.cssText = 'position:absolute;top:-8px;right:-8px;width:18px;height:18px;background:#FF6F00;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;z-index:99999;pointer-events:auto;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.5);';
+      badge.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="#fff" viewBox="0 0 16 16"><path d="M8 15c4.418 0 8-3.134 8-7s-3.582-7-8-7-8 3.134-8 7c0 1.76.743 3.37 1.97 4.6-.097 1.016-.417 2.13-.771 2.966-.079.186.074.394.273.362 2.256-.37 3.597-.938 4.18-1.234A9.06 9.06 0 0 0 8 15z"/></svg>';
       var prevPos = found.style.position;
       var computedPos = window.getComputedStyle(found).position;
       if (computedPos === 'static') found.style.position = 'relative';
@@ -120,6 +121,17 @@ const COMPANION_SCRIPT = `<script>
   }, true);
 
   document.addEventListener('click', function(e) {
+    // Badge click — open comment in sidebar regardless of comment mode
+    var target = e.target;
+    var badgeEl = (target && target.closest) ? target.closest('[data-cm-badge]') : null;
+    if (!badgeEl && target && target.hasAttribute && target.hasAttribute('data-cm-badge')) badgeEl = target;
+    if (badgeEl) {
+      e.preventDefault();
+      e.stopPropagation();
+      var commentId = badgeEl.getAttribute('data-cm-comment-id');
+      if (commentId) window.parent.postMessage({ type: 'cm-marker-clicked', commentId: commentId }, '*');
+      return;
+    }
     if (!_cmActive) return;
     e.preventDefault();
     e.stopPropagation();

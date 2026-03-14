@@ -49,6 +49,7 @@ export function PreviewFrame({
   // Send markers when comments change while on the same page
   useEffect(() => {
     const markerData = comments.map((c) => ({
+      id: c.id,
       elementId: c.anchor?.elementId,
       testId: c.anchor?.testId,
       tag: c.anchor?.tag,
@@ -95,6 +96,7 @@ export function PreviewFrame({
     if (!win) return;
 
     const markerData = commentsRef.current.map((c) => ({
+      id: c.id,
       elementId: c.anchor?.elementId,
       testId: c.anchor?.testId,
       tag: c.anchor?.tag,
