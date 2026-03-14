@@ -242,6 +242,9 @@ export class PreviewProvider {
     const bgUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this.context.extensionUri, 'images', 'cm_bg.png'),
     );
+    const sadUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this.context.extensionUri, 'images', 'cm_sad.svg'),
+    );
     const nonce = randomUUID().replace(/-/g, '');
 
     return /* html */ `<!DOCTYPE html>
@@ -256,6 +259,7 @@ export class PreviewProvider {
              img-src ${webview.cspSource} https: data:;" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="cm-bg" content="${bgUri}" />
+  <meta name="cm-sad" content="${sadUri}" />
   <link rel="stylesheet" href="${styleUri}" />
   <title>CeramicMark</title>
 </head>
