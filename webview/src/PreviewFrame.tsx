@@ -25,8 +25,10 @@ export function PreviewFrame({
   // Refs so the onLoad handler always sees the latest values without being recreated
   const focusedCommentRef = useRef(focusedComment);
   const commentsRef = useRef(comments);
+  const currentPageRef = useRef(currentPage);
   useEffect(() => { focusedCommentRef.current = focusedComment; }, [focusedComment]);
   useEffect(() => { commentsRef.current = comments; }, [comments]);
+  useEffect(() => { currentPageRef.current = currentPage; }, [currentPage]);
 
   // Exit comment mode on Escape
   useEffect(() => {
@@ -63,6 +65,28 @@ export function PreviewFrame({
     );
   }, [comments]);
 
+  // Re-send markers after SPA client-side navigation (no onLoad fires)
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      const markerData = commentsRef.current
+        .filter((c) => (c.anchor?.pageUrl ?? '/') === currentPage)
+        .map((c) => ({
+          id: c.id,
+          elementId: c.anchor?.elementId,
+          testId: c.anchor?.testId,
+          tag: c.anchor?.tag,
+          text: c.anchor?.text,
+          cssPath: c.anchor?.cssPath,
+          status: c.status,
+        }));
+      iframeRef.current?.contentWindow?.postMessage(
+        { type: 'cm-update-markers', comments: markerData },
+        '*',
+      );
+    }, 100);
+    return () => clearTimeout(timeout);
+  }, [currentPage]);
+
   // Navigate to the comment's page, or highlight immediately if already there
   useEffect(() => {
     if (!focusedComment || !iframeUrl) return;
@@ -95,15 +119,17 @@ export function PreviewFrame({
     const win = iframeRef.current?.contentWindow;
     if (!win) return;
 
-    const markerData = commentsRef.current.map((c) => ({
-      id: c.id,
-      elementId: c.anchor?.elementId,
-      testId: c.anchor?.testId,
-      tag: c.anchor?.tag,
-      text: c.anchor?.text,
-      cssPath: c.anchor?.cssPath,
-      status: c.status,
-    }));
+    const markerData = commentsRef.current
+      .filter((c) => (c.anchor?.pageUrl ?? '/') === currentPageRef.current)
+      .map((c) => ({
+        id: c.id,
+        elementId: c.anchor?.elementId,
+        testId: c.anchor?.testId,
+        tag: c.anchor?.tag,
+        text: c.anchor?.text,
+        cssPath: c.anchor?.cssPath,
+        status: c.status,
+      }));
     win.postMessage({ type: 'cm-update-markers', comments: markerData }, '*');
 
     const fc = focusedCommentRef.current;
