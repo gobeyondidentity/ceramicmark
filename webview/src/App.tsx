@@ -80,8 +80,15 @@ function reducer(state: State, action: Action): State {
         unreadIds,
       };
     }
-    case 'DELETE_COMMENT':
-      return { ...state, comments: state.comments.filter((c) => c.id !== action.commentId) };
+    case 'DELETE_COMMENT': {
+      const wasFocused = state.focusedCommentId === action.commentId;
+      return {
+        ...state,
+        comments: state.comments.filter((c) => c.id !== action.commentId),
+        focusedCommentId: wasFocused ? null : state.focusedCommentId,
+        focusCommentTs: wasFocused ? Date.now() : state.focusCommentTs,
+      };
+    }
     case 'TOGGLE_COMMENT_MODE':
       return { ...state, commentMode: !state.commentMode, pendingAnchor: null };
     case 'ELEMENT_SELECTED':
