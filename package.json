@@ -69,7 +69,8 @@
         {
           "id": "ceramicMark.comments",
           "name": "Comments",
-          "type": "tree"
+          "type": "tree",
+          "visibility": "collapsed"
         }
       ]
     },
