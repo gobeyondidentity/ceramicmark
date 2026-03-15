@@ -18,6 +18,7 @@ const COMPANION_SCRIPT = `<script>
   var _cmFocusedPrevZ = '';
   var _cmFocusedPrevPos = '';
   var _cmFocusedWasStatic = false;
+  var _cmPendingEl = null;
 
   function clearMarkers() {
     for (var i = 0; i < _cmMarkers.length; i++) {
@@ -226,6 +227,7 @@ const COMPANION_SCRIPT = `<script>
 
   function exitCommentMode() {
     _cmActive = false;
+    _cmPendingEl = null;
     document.body.style.cursor = '';
     clearHighlight();
   }
@@ -266,6 +268,7 @@ const COMPANION_SCRIPT = `<script>
     e.stopPropagation();
     var el = document.elementFromPoint(e.clientX, e.clientY);
     if (!el) return;
+    _cmPendingEl = el;
     var label = buildLabel(el);
     window.parent.postMessage({
       type: 'cm-element-selected',
@@ -345,6 +348,18 @@ const COMPANION_SCRIPT = `<script>
   history.replaceState = function() { _replace.apply(history, arguments); notifyNavDeferred(); };
   window.addEventListener('popstate', notifyNavDeferred);
   window.addEventListener('hashchange', notifyNavDeferred);
+
+  // Re-send element position on scroll so floating popovers stay anchored
+  window.addEventListener('scroll', function() {
+    if (_cmFocusedEl) {
+      var r = _cmFocusedEl.getBoundingClientRect();
+      window.parent.postMessage({ type: 'cm-element-positioned', x: Math.round(r.left + r.width / 2), y: Math.round(r.top) }, '*');
+    }
+    if (_cmPendingEl) {
+      var rp = _cmPendingEl.getBoundingClientRect();
+      window.parent.postMessage({ type: 'cm-pending-positioned', x: Math.round(rp.left + rp.width / 2), y: Math.round(rp.top) }, '*');
+    }
+  }, { capture: true, passive: true });
 
   // Poll document.title every 500ms — for React-state apps where the URL never changes
   // but the title updates when the user switches sections/views.

@@ -41,6 +41,7 @@ type Action =
   | { type: 'FOCUS_COMMENT'; commentId: string; position?: { x: number; y: number } }
   | { type: 'CLEAR_FOCUS' }
   | { type: 'SET_FOCUSED_POSITION'; x: number; y: number }
+  | { type: 'SET_PENDING_POSITION'; x: number; y: number }
   | { type: 'LOAD_MEMBERS'; members: Member[] }
   | { type: 'MARK_READ'; commentId: string }
   | { type: 'SET_BRANCH'; branch: string }
@@ -106,6 +107,8 @@ function reducer(state: State, action: Action): State {
       return { ...state, focusedCommentId: null, focusedPinPosition: null, pendingAnchor: null, pendingPosition: null, focusCommentTs: Date.now() };
     case 'SET_FOCUSED_POSITION':
       return { ...state, focusedPinPosition: { x: action.x, y: action.y } };
+    case 'SET_PENDING_POSITION':
+      return { ...state, pendingPosition: { x: action.x, y: action.y } };
     case 'LOAD_MEMBERS':
       return { ...state, members: action.members };
     case 'MARK_READ': {
@@ -197,6 +200,10 @@ export function App(): React.ReactElement {
       }
       if (message.type === 'cm-element-positioned') {
         dispatch({ type: 'SET_FOCUSED_POSITION', x: message.x as number, y: message.y as number });
+        return;
+      }
+      if (message.type === 'cm-pending-positioned') {
+        dispatch({ type: 'SET_PENDING_POSITION', x: message.x as number, y: message.y as number });
         return;
       }
       if (message.type === 'cm-marker-clicked') {
