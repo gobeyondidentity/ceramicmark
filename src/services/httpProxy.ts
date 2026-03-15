@@ -210,6 +210,18 @@ const COMPANION_SCRIPT = `<script>
     // 8. role hint
     var role = el.getAttribute('role');
     if (role) return '<' + tag + '[' + role + ']>';
+    // 9. nearest labeled ancestor (up to 4 hops) — helps when cursor is on a layout wrapper
+    var anc = el.parentElement;
+    var hops = 0;
+    while (anc && anc !== document.body && hops < 4) {
+      var ancAria = anc.getAttribute('aria-label');
+      if (ancAria && ancAria.trim()) return '<' + tag + '> in ' + ancAria.trim();
+      if (anc.id) return '<' + tag + '> in #' + anc.id;
+      var ancTestId = (anc.dataset && anc.dataset.testid) ? anc.dataset.testid : '';
+      if (ancTestId) return '<' + tag + '> in [' + ancTestId + ']';
+      anc = anc.parentElement;
+      hops++;
+    }
     return '<' + tag + '>';
   }
 

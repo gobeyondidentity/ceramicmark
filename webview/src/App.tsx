@@ -98,7 +98,15 @@ function reducer(state: State, action: Action): State {
     case 'TOGGLE_COMMENT_MODE':
       return { ...state, commentMode: !state.commentMode, pendingAnchor: null };
     case 'ELEMENT_SELECTED':
-      return { ...state, pendingAnchor: action.anchor, pendingPosition: action.position ?? null, focusedCommentId: null, focusedPinPosition: null };
+      return {
+        ...state,
+        pendingAnchor: action.anchor,
+        pendingPosition: action.position ?? null,
+        focusedCommentId: null,
+        focusedPinPosition: null,
+        currentPage: action.anchor.pageUrl ?? state.currentPage,
+        currentTitle: action.anchor.pageTitle ?? state.currentTitle,
+      };
     case 'CANCEL_PENDING':
       return { ...state, pendingAnchor: null, pendingPosition: null };
     case 'FOCUS_COMMENT':
