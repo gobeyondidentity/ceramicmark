@@ -32,8 +32,11 @@ export function CommentForm({ anchor, memberNames, onCancel }: CommentFormProps)
 
   return (
     <div
-      className="flex flex-col gap-2 p-3 shrink-0"
-      style={{ borderBottom: '1px solid var(--vscode-panel-border, #444)' }}
+      className="flex flex-col gap-2 p-3 rounded-lg shadow-2xl"
+      style={{
+        background: 'var(--vscode-editorWidget-background, #252526)',
+        border: '1px solid var(--vscode-panel-border, #454545)',
+      }}
     >
       {/* Header */}
       <div className="flex items-center justify-between">

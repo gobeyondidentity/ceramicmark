@@ -71,6 +71,8 @@ function reducer(state: State, action: Action): State {
         commentMode: false,
         pendingAnchor: null,
         unreadIds,
+        currentPage: action.comment.anchor?.pageUrl ?? state.currentPage,
+        currentTitle: action.comment.anchor?.pageTitle ?? state.currentTitle,
       };
     }
     case 'UPDATE_COMMENT': {
