@@ -56,6 +56,20 @@ export class PreviewProvider {
       this.proxy?.stop();
       this.proxy = undefined;
     });
+
+    // Watch .git/HEAD so the branch display updates immediately on branch switch
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri;
+    if (workspaceRoot) {
+      const headWatcher = vscode.workspace.createFileSystemWatcher(
+        new vscode.RelativePattern(workspaceRoot, '.git/HEAD'),
+      );
+      const refreshBranch = async () => {
+        const branch = await getGitBranch(workspaceRoot.fsPath);
+        this.postMessage({ type: 'setBranch', branch });
+      };
+      headWatcher.onDidChange(refreshBranch);
+      this.panel.onDidDispose(() => headWatcher.dispose());
+    }
   }
 
   private async handleMessage(message: WebviewMessage): Promise<void> {

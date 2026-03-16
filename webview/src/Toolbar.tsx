@@ -74,7 +74,7 @@ export function Toolbar({
             onFocus={() => {
               if (!inputValue) setInputValue('http://localhost:');
             }}
-            placeholder="Enter Dev Server: ex http://localhost:3000 | Press Enter"
+            placeholder="localhost:"
             className="w-full px-2 py-1 text-xs rounded outline-none placeholder-[#FF6F00]"
             style={{
               background: 'transparent',

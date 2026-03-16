@@ -407,7 +407,7 @@ function SplashScreen({ onUrlChange }: { onUrlChange: (url: string) => void }): 
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onFocus={() => { if (!inputValue) setInputValue('http://localhost:'); }}
-          placeholder="Enter Dev Server: ex http://localhost:3000 | Press Enter"
+          placeholder="localhost:"
           autoFocus
           className="flex-1 px-2 py-1 text-xs min-w-0 outline-none placeholder-white"
           style={{
