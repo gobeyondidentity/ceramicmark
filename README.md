@@ -101,6 +101,7 @@ git config user.email
 ## Roadmap
 
 - [ ] Cloud sync with real-time collaboration (comments appear live as teammates add them)
-- [ ] GitHub/GitLab sign-in for verified identity and avatars
+- [ ] GitHub/GitLab sign-in for verified identity and avatars *(currently deferred — git config identity is sufficient for internal teams using git-based storage; sign-in becomes worthwhile as a prerequisite for cloud sync, where there's no commit audit trail to fall back on)*
 - [ ] Onboarding setting: choose commit vs. gitignore for comment storage
 - [ ] Link comment pins directly to specific lines of source code
+- [ ] Standalone browser mode — run as a local web app (`ceramicmark serve`) without VS Code, using the same HTTP proxy and comment storage
