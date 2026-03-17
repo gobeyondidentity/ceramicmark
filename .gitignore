@@ -1,6 +1,10 @@
 node_modules/
+webview/node_modules/
 dist/
-out/
+webview/dist/
 *.vsix
 .env
-webview/node_modules/
+.DS_Store
+*.log
+npm-debug.log*
+.vscode-test/
