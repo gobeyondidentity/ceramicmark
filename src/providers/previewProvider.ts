@@ -5,7 +5,7 @@ import { randomUUID } from 'crypto';
 import type { ICommentStore } from '../store/ICommentStore.js';
 import type { MemberStore } from '../store/memberStore.js';
 import type { Comment, ExtensionMessage, WebviewMessage, Reply } from '../types.js';
-import { getGitIdentity, getGitBranch } from '../auth/gitIdentity.js';
+import { getGitIdentity, getGitBranch, hasUncommittedIdeComments } from '../auth/gitIdentity.js';
 import { HttpProxy } from '../services/httpProxy.js';
 
 export class PreviewProvider {
@@ -123,6 +123,7 @@ export class PreviewProvider {
         await this.store.add(comment);
         this.postMessage({ type: 'commentAdded', comment });
         this.onCommentChangedEmitter.fire();
+        void this.notifyCommitReminder(existing.length + 1);
         if (existing.length === 0) {
           await this.notifyFirstComment();
         }
@@ -167,6 +168,18 @@ export class PreviewProvider {
     }
   }
 
+  private async notifyCommitReminder(commentCount: number): Promise<void> {
+    const lastMilestone = this.context.workspaceState.get<number>('commitReminderAt') ?? 0;
+    if (commentCount % 10 !== 0 || commentCount <= lastMilestone) return;
+    const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    const uncommitted = await hasUncommittedIdeComments(cwd);
+    if (!uncommitted) return;
+    await this.context.workspaceState.update('commitReminderAt', commentCount);
+    vscode.window.showInformationMessage(
+      `CeramicMark: You have ${commentCount} comments — consider committing .ide-comments/ so your team can see them.`,
+    );
+  }
+
   private async notifyFirstComment(): Promise<void> {
     if (this.context.workspaceState.get<boolean>('gitignorePrompted')) return;
     await this.context.workspaceState.update('gitignorePrompted', true);
@@ -190,6 +203,37 @@ export class PreviewProvider {
     this.postMessage({ type: 'identity', author });
     this.postMessage({ type: 'setBranch', branch });
     this.postMessage({ type: 'loadMembers', members });
+    await this.checkGitignore();
+  }
+
+  private async checkGitignore(): Promise<void> {
+    const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    if (!cwd) return;
+    const gitignorePath = path.join(cwd, '.gitignore');
+    let contents: string;
+    try {
+      contents = await fs.readFile(gitignorePath, 'utf8');
+    } catch {
+      return; // no .gitignore, nothing to do
+    }
+    const lines = contents.split('\n');
+    const isIgnored = lines.some((l) => /^\.ide-comments\/?$/.test(l.trim()));
+    if (!isIgnored) return;
+
+    const choice = await vscode.window.showWarningMessage(
+      'CeramicMark: .ide-comments/ is in your .gitignore — comments won\'t be shared with your team.',
+      'Remove from .gitignore',
+      'Ignore',
+    );
+    if (choice === 'Remove from .gitignore') {
+      const updated = lines
+        .filter((l) => !/^\.ide-comments\/?$/.test(l.trim()))
+        .join('\n');
+      await fs.writeFile(gitignorePath, updated, 'utf8');
+      vscode.window.showInformationMessage(
+        'CeramicMark: Removed .ide-comments/ from .gitignore. Commit the folder to share your comments.',
+      );
+    }
   }
 
   private postMessage(message: ExtensionMessage): void {

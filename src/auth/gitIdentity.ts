@@ -42,3 +42,15 @@ export async function getGitBranch(cwd?: string): Promise<string> {
   }
   return 'unknown';
 }
+
+/**
+ * Returns true if .ide-comments/ has any uncommitted changes (new, modified, or untracked).
+ */
+export async function hasUncommittedIdeComments(cwd?: string): Promise<boolean> {
+  try {
+    const result = await exec('git', ['status', '--porcelain', '.ide-comments/'], cwd ? { cwd } : undefined);
+    return result.stdout.trim().length > 0;
+  } catch {
+    return false;
+  }
+}
