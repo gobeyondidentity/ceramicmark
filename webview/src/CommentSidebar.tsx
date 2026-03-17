@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { Comment } from './types.js';
 
 /** Convert a URL pathname to a friendly display label. e.g. "/" → "Homepage", "/user-profile" → "User Profile" */
@@ -21,6 +21,7 @@ interface CommentSidebarProps {
   unreadIds: Set<string>;
   onFocusComment: (id: string) => void;
   onMarkRead: (id: string) => void;
+  onHoverComment?: (id: string | null) => void;
 }
 
 export function CommentSidebar({
@@ -32,8 +33,10 @@ export function CommentSidebar({
   unreadIds,
   onFocusComment,
   onMarkRead,
+  onHoverComment,
 }: CommentSidebarProps): React.ReactElement {
   const focusedRef = useRef<HTMLButtonElement>(null);
+  const [tab, setTab] = useState<'open' | 'resolved'>('open');
 
   // Scroll focused comment into view when it changes
   useEffect(() => {
@@ -42,9 +45,23 @@ export function CommentSidebar({
     }
   }, [focusedCommentId]);
 
-  // Group comments by anchor.pageUrl
+  const branchComments = comments.filter(
+    (c) => !(c.branch && currentBranch && c.branch !== currentBranch),
+  );
+  const openCount = branchComments.filter((c) => c.status === 'open').length;
+  const resolvedCount = branchComments.filter((c) => c.status === 'resolved').length;
+
+  // Filter to active tab and current branch before grouping
+  const visibleComments = comments.filter((c) => {
+    if (c.status !== tab) return false;
+    // Hide comments from other branches when we know both sides
+    if (c.branch && currentBranch && c.branch !== currentBranch) return false;
+    return true;
+  });
+
+  // Group visible comments by anchor.pageUrl
   const grouped = new Map<string, Comment[]>();
-  for (const comment of comments) {
+  for (const comment of visibleComments) {
     const page = comment.anchor?.pageUrl || '/';
     if (!grouped.has(page)) grouped.set(page, []);
     grouped.get(page)!.push(comment);
@@ -57,8 +74,6 @@ export function CommentSidebar({
     return a.localeCompare(b);
   });
 
-  const openCount = comments.filter((c) => c.status === 'open').length;
-
   return (
     <div
       className="flex flex-col shrink-0 overflow-hidden"
@@ -68,33 +83,65 @@ export function CommentSidebar({
         borderLeft: '1px solid var(--vscode-panel-border, #444)',
       }}
     >
-      {/* Header */}
+      {/* Header — segmented control */}
       <div
-        className="flex items-center gap-2 px-3 py-2 shrink-0"
+        className="flex items-center px-3 py-2 shrink-0"
         style={{ borderBottom: '1px solid var(--vscode-panel-border, #444)' }}
       >
-        <h2 className="text-xs font-medium m-0" style={{ color: 'var(--vscode-foreground)' }}>
-          Comments
-        </h2>
-        {openCount > 0 && (
-          <span
-            className="px-1.5 rounded-full text-xs"
-            style={{
-              background: '#FF6F00',
-              color: 'var(--vscode-titleBar-activeBackground, #3c3c3c)',
-            }}
-          >
-            {openCount}
-          </span>
-        )}
+        <h2 className="sr-only">Comments</h2>
+        <div
+          className="flex rounded overflow-hidden w-full text-xs"
+          role="tablist"
+          aria-label="Comment filter"
+          style={{ border: '1px solid var(--vscode-panel-border, #444)' }}
+        >
+          {(['open', 'resolved'] as const).map((t) => {
+            const label = t === 'open' ? 'Comments' : 'Resolved';
+            const count = t === 'open' ? openCount : resolvedCount;
+            const isActive = tab === t;
+            return (
+              <button
+                key={t}
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => setTab(t)}
+                className="flex-1 py-1 flex items-center justify-center gap-1"
+                style={{
+                  background: isActive ? '#FF6F00' : 'transparent',
+                  color: isActive
+                    ? 'var(--vscode-titleBar-activeBackground, #3c3c3c)'
+                    : 'var(--vscode-foreground)',
+                  opacity: isActive ? 1 : 0.5,
+                  fontWeight: isActive ? 600 : 400,
+                }}
+              >
+                {label}
+                {count > 0 && (
+                  <span
+                    className="px-1 rounded-full"
+                    style={{
+                      background: isActive ? 'rgba(0,0,0,0.2)' : 'rgba(128,128,128,0.2)',
+                    }}
+                  >
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Comment list */}
       <div className="flex-1 overflow-y-auto">
-        {comments.length === 0 ? (
+        {visibleComments.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full px-4 text-center" style={{ minHeight: '120px' }}>
             <span className="text-xs opacity-30" style={{ color: 'var(--vscode-foreground)' }}>
-              No comments yet. Enter comment mode and click any element to leave one.
+              {comments.length === 0
+                ? 'No comments yet. Enter comment mode and click any element to leave one.'
+                : tab === 'open'
+                  ? 'No open comments.'
+                  : 'No resolved comments yet.'}
             </span>
           </div>
         ) : (
@@ -143,17 +190,11 @@ export function CommentSidebar({
                   </span>
                 </div>
 
-                {/* Comments in this page */}
+                {/* Comments in this page — newest first */}
                 {[...pageComments]
-                  .sort((a, b) => {
-                    if (a.status !== b.status) return a.status === 'open' ? -1 : 1;
-                    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-                  })
+                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                   .map((comment) => {
                     const isFocused = focusedCommentId === comment.id;
-                    const isOffBranch = !!(
-                      comment.branch && currentBranch && comment.branch !== currentBranch
-                    );
                     const isUnread = unreadIds.has(comment.id);
 
                     return (
@@ -164,10 +205,11 @@ export function CommentSidebar({
                         style={{
                           background: isFocused ? 'rgba(255,111,0,0.08)' : 'transparent',
                           borderBottom: '1px solid var(--vscode-panel-border, #333)',
-                          opacity: isOffBranch ? 0.5 : 1,
                           cursor: 'pointer',
                         }}
                         aria-label={`Comment by ${comment.author.name}: ${comment.body}`}
+                        onMouseEnter={() => onHoverComment?.(comment.id)}
+                        onMouseLeave={() => onHoverComment?.(null)}
                         onClick={() => {
                           onFocusComment(comment.id);
                           onMarkRead(comment.id);
@@ -234,14 +276,6 @@ export function CommentSidebar({
                             >
                               · {comment.replies.length}{' '}
                               {comment.replies.length !== 1 ? 'replies' : 'reply'}
-                            </span>
-                          )}
-                          {isOffBranch && (
-                            <span
-                              className="text-xs opacity-30 shrink-0 ml-auto truncate"
-                              style={{ color: 'var(--vscode-foreground)' }}
-                            >
-                              {comment.branch}
                             </span>
                           )}
                         </div>

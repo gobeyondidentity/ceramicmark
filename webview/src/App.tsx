@@ -25,6 +25,7 @@ interface State {
   currentBranch: string | null;
   sidebarOpen: boolean;
   connectionFailed: boolean;
+  hoveredCommentId: string | null;
 }
 
 type Action =
@@ -48,7 +49,8 @@ type Action =
   | { type: 'IFRAME_NAVIGATED'; pathname: string; title?: string }
   | { type: 'TOGGLE_SIDEBAR' }
   | { type: 'SET_SIDEBAR'; open: boolean }
-  | { type: 'CONNECTION_FAILED' };
+  | { type: 'CONNECTION_FAILED' }
+  | { type: 'HOVER_COMMENT'; commentId: string | null };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -136,6 +138,8 @@ function reducer(state: State, action: Action): State {
       return { ...state, sidebarOpen: !state.sidebarOpen };
     case 'SET_SIDEBAR':
       return { ...state, sidebarOpen: action.open };
+    case 'HOVER_COMMENT':
+      return { ...state, hoveredCommentId: action.commentId };
     default:
       return state;
   }
@@ -160,6 +164,7 @@ const initialState: State = {
   currentBranch: null,
   sidebarOpen: true,
   connectionFailed: false,
+  hoveredCommentId: null,
 };
 
 export function App(): React.ReactElement {
@@ -310,6 +315,9 @@ export function App(): React.ReactElement {
   const focusedComment = state.focusedCommentId
     ? (state.comments.find((c) => c.id === state.focusedCommentId) ?? null)
     : null;
+  const hoveredComment = state.hoveredCommentId
+    ? (state.comments.find((c) => c.id === state.hoveredCommentId) ?? null)
+    : null;
 
   if (!state.displayUrl) {
     return <SplashScreen onUrlChange={handleUrlChange} />;
@@ -333,6 +341,7 @@ export function App(): React.ReactElement {
           displayUrl={state.displayUrl}
           commentMode={state.commentMode}
           focusedComment={focusedComment}
+          hoveredComment={hoveredComment}
           focusedPinPosition={state.focusedPinPosition}
           pendingAnchor={state.pendingAnchor}
           pendingPosition={state.pendingPosition}
@@ -361,6 +370,7 @@ export function App(): React.ReactElement {
           unreadIds={state.unreadIds}
           onFocusComment={(id) => dispatch({ type: 'FOCUS_COMMENT', commentId: id })}
           onMarkRead={(id) => dispatch({ type: 'MARK_READ', commentId: id })}
+          onHoverComment={(id) => dispatch({ type: 'HOVER_COMMENT', commentId: id })}
         />
       )}
     </div>

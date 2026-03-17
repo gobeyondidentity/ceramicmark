@@ -19,6 +19,24 @@ const COMPANION_SCRIPT = `<script>
   var _cmFocusedPrevPos = '';
   var _cmFocusedWasStatic = false;
   var _cmPendingEl = null;
+  // Hover highlight state
+  var _cmHoverEl = null;
+  var _cmHoverPrevOutline = '';
+
+  function clearHoverHighlight() {
+    if (!_cmHoverEl) return;
+    _cmHoverEl.style.outline = _cmHoverPrevOutline;
+    _cmHoverEl = null;
+  }
+
+  function applyHoverHighlight(el) {
+    // Skip if this element is already the focused (selected) one
+    if (_cmFocusedEl && _cmFocusedEl === el) return;
+    clearHoverHighlight();
+    _cmHoverEl = el;
+    _cmHoverPrevOutline = el.style.outline;
+    el.style.outline = '2px dashed rgba(255,111,0,0.6)';
+  }
 
   function clearMarkers() {
     for (var i = 0; i < _cmMarkers.length; i++) {
@@ -123,6 +141,7 @@ const COMPANION_SCRIPT = `<script>
   }
 
   function applyFocusHighlight(el) {
+    clearHoverHighlight();
     clearFocusHighlight();
     _cmFocusedEl = el;
     _cmFocusedPrevOutline = el.style.outline;
@@ -320,6 +339,27 @@ const COMPANION_SCRIPT = `<script>
 
     if (e.data.type === 'cm-update-markers') {
       renderMarkers(e.data.comments || []);
+      return;
+    }
+
+    if (e.data.type === 'cm-hover-element') {
+      var d = e.data;
+      var el = null;
+      if (d.elementId) el = document.getElementById(d.elementId);
+      if (!el && d.testId) el = document.querySelector('[data-testid="' + d.testId + '"]');
+      if (!el && d.tag && d.text) {
+        var hels = document.querySelectorAll(d.tag);
+        for (var hi = 0; hi < hels.length; hi++) {
+          if ((hels[hi].textContent || '').trim().indexOf(d.text) !== -1) { el = hels[hi]; break; }
+        }
+      }
+      if (!el && d.cssPath) { try { el = document.querySelector(d.cssPath); } catch(hex) {} }
+      if (el) applyHoverHighlight(el);
+      return;
+    }
+
+    if (e.data.type === 'cm-clear-hover') {
+      clearHoverHighlight();
       return;
     }
 

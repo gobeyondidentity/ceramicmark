@@ -8,6 +8,7 @@ interface PreviewFrameProps {
   displayUrl: string;
   commentMode: boolean;
   focusedComment: Comment | null;
+  hoveredComment: Comment | null;
   focusedPinPosition: { x: number; y: number } | null;
   pendingAnchor: Partial<ElementAnchor> | null;
   pendingPosition: { x: number; y: number } | null;
@@ -29,6 +30,7 @@ export function PreviewFrame({
   displayUrl,
   commentMode,
   focusedComment,
+  hoveredComment,
   focusedPinPosition,
   pendingAnchor,
   pendingPosition,
@@ -168,6 +170,26 @@ export function PreviewFrame({
       );
     }
   }, [focusCommentTs, iframeUrl]);
+
+  // Show a subtle dashed outline on hover without navigating or opening a popover
+  useEffect(() => {
+    const win = iframeRef.current?.contentWindow;
+    if (!win) return;
+    if (!hoveredComment) {
+      win.postMessage({ type: 'cm-clear-hover' }, '*');
+      return;
+    }
+    const commentPage = hoveredComment.anchor?.pageUrl ?? '/';
+    if (commentPage !== currentPageRef.current) return; // different page — do nothing
+    win.postMessage({
+      type: 'cm-hover-element',
+      elementId: hoveredComment.anchor?.elementId,
+      testId: hoveredComment.anchor?.testId,
+      tag: hoveredComment.anchor?.tag,
+      text: hoveredComment.anchor?.text,
+      cssPath: hoveredComment.anchor?.cssPath,
+    }, '*');
+  }, [hoveredComment]);
 
   // After iframe page load (MPA): DOM is ready, React has rendered — send all markers
   // and the focused comment highlight. Unfiltered so the companion script can match
