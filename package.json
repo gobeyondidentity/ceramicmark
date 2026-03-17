@@ -7,6 +7,7 @@
   "engines": {
     "vscode": "^1.85.0"
   },
+  "icon": "images/cm_icon.png",
   "categories": [
     "Other"
   ],
@@ -126,6 +127,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ceramicmark/ceramic-mark"
+    "url": "https://github.com/gobeyondidentity/ceramicmark"
   }
 }
