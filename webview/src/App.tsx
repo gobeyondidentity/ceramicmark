@@ -173,7 +173,11 @@ export function App(): React.ReactElement {
   const identityRef = useRef<string | null>(null);
   const hasUrlRef = useRef(false);
   const proxyOriginRef = useRef<string | null>(null);
+  const focusedCommentIdRef = useRef<string | null>(null);
+  const commentsRef = useRef(state.comments);
   useEffect(() => { hasUrlRef.current = !!state.displayUrl; }, [state.displayUrl]);
+  useEffect(() => { focusedCommentIdRef.current = state.focusedCommentId; }, [state.focusedCommentId]);
+  useEffect(() => { commentsRef.current = state.comments; }, [state.comments]);
 
   useEffect(() => {
     if (isMounted.current) return;
@@ -301,6 +305,27 @@ export function App(): React.ReactElement {
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
       dispatch({ type: 'TOGGLE_COMMENT_MODE' });
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  // 'R' key resolves (or reopens) the currently focused comment
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== 'r' && e.key !== 'R') return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+      const id = focusedCommentIdRef.current;
+      if (!id) return;
+      const comment = commentsRef.current.find((c) => c.id === id);
+      if (!comment) return;
+      vscodeApi.postMessage({
+        type: comment.status === 'open' ? 'resolveComment' : 'reopenComment',
+        commentId: id,
+      });
+      dispatch({ type: 'CLEAR_FOCUS' });
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);

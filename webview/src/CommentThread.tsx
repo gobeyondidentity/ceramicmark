@@ -49,7 +49,7 @@ export function CommentThread({ comment, memberNames, onClose }: CommentThreadPr
           <button
             onClick={toggleStatus}
             className="text-xs px-2 py-0.5 rounded"
-            title={comment.status === 'open' ? 'Mark resolved' : 'Reopen'}
+            title={comment.status === 'open' ? 'Mark resolved (R)' : 'Reopen (R)'}
             style={{
               background: comment.status === 'open'
                 ? 'var(--vscode-button-secondaryBackground, #3a3d41)'
