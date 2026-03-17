@@ -25,12 +25,14 @@ Comments are stored in `.ide-comments/comments.json` inside your project — the
 - **Element-anchored comments** — click any element in the live preview to attach a comment directly to it; a marker badge appears on the element for all teammates
 - **Smart element labels** — comments are labeled using `aria-label`, placeholder text, alt text, heading content, or element ID so you always know what was clicked
 - **Marker persistence** — badges reappear automatically as you navigate between pages and views, including React-state apps that never change the URL
-- **Sidebar comment list** — all comments listed in a collapsible sidebar; click any comment to jump to and highlight the element in the preview
+- **Sidebar comment list** — all comments listed in a collapsible sidebar; click any comment to jump to and highlight the element in the preview; hover a comment card to see a dashed outline on the element without navigating
+- **Comments / Resolved tabs** — sidebar has a segmented control to switch between open and resolved comments
 - **Threaded replies** — reply to any comment directly in the sidebar
-- **Resolve / reopen** — mark comments as resolved when the issue is addressed; resolved comments are filtered from the marker layer
+- **Resolve / reopen** — mark comments as resolved when the issue is addressed; resolved comments move to the Resolved tab and their markers are removed from the preview
 - **@mentions** — type `@` in any comment or reply to mention a teammate by name
 - **Read/unread tracking** — new comments from others are marked unread with a dot indicator (session-based)
-- **Branch-scoped view** — comments store the branch they were made on; the active git branch is shown in the toolbar
+- **Branch-scoped view** — comments store the branch they were made on; the toolbar shows the active git branch and updates automatically when you switch branches; comments from other branches are hidden
+- **Commit reminder** — a toast appears at every 10-comment milestone when `.ide-comments/` has uncommitted changes, so you don't forget to share with the team
 - **Keyboard shortcuts** — `C` toggles comment mode (Figma-style); `Esc` exits comment mode
 - **Responsive sidebar** — auto-collapses below 640px so the preview always gets enough space
 
