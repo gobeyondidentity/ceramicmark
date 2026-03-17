@@ -3,7 +3,7 @@
   "displayName": "CeramicMark",
   "description": "Figma-style visual comment pins on live UI previews, inside your IDE.",
   "version": "0.1.0",
-  "publisher": "ceramicmark",
+  "publisher": "beyondidentity",
   "engines": {
     "vscode": "^1.85.0"
   },
