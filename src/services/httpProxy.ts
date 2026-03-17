@@ -38,11 +38,30 @@ const COMPANION_SCRIPT = `<script>
     el.style.outline = '2px dashed rgba(255,111,0,0.6)';
   }
 
+  function getOrCreateBadgeLayer() {
+    var layer = document.getElementById('cm-badge-layer');
+    if (!layer) {
+      layer = document.createElement('div');
+      layer.id = 'cm-badge-layer';
+      layer.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:2147483647;';
+      document.body.appendChild(layer);
+    }
+    return layer;
+  }
+
+  function repositionMarkers() {
+    for (var i = 0; i < _cmMarkers.length; i++) {
+      var m = _cmMarkers[i];
+      var r = m.el.getBoundingClientRect();
+      m.badge.style.top = Math.round(r.top - 9) + 'px';
+      m.badge.style.left = Math.round(r.right - 9) + 'px';
+    }
+  }
+
   function clearMarkers() {
     for (var i = 0; i < _cmMarkers.length; i++) {
       var m = _cmMarkers[i];
       if (m.badge.parentNode) m.badge.parentNode.removeChild(m.badge);
-      if (m.wasStatic) m.el.style.position = m.prevPos;
     }
     _cmMarkers = [];
   }
@@ -59,6 +78,7 @@ const COMPANION_SCRIPT = `<script>
       if (!groups[key]) groups[key] = { anchor: c, firstId: c.id, count: 0 };
       groups[key].count++;
     }
+    var layer = getOrCreateBadgeLayer();
     for (var k in groups) {
       var g = groups[k];
       var a = g.anchor;
@@ -75,16 +95,16 @@ const COMPANION_SCRIPT = `<script>
       if (!found || found === document.body || found === document.documentElement) {
         continue;
       }
+      var r = found.getBoundingClientRect();
       var badge = document.createElement('span');
       badge.setAttribute('data-cm-badge', '1');
       badge.setAttribute('data-cm-comment-id', g.firstId);
-      badge.style.cssText = 'position:absolute;top:-8px;right:-8px;width:18px;height:18px;background:#FF6F00;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;z-index:99999;pointer-events:auto;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.5);';
+      badge.style.cssText = 'position:fixed;width:18px;height:18px;background:#FF6F00;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;pointer-events:auto;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.5);';
+      badge.style.top = Math.round(r.top - 9) + 'px';
+      badge.style.left = Math.round(r.right - 9) + 'px';
       badge.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="#fff" viewBox="0 0 16 16"><path d="M8 15c4.418 0 8-3.134 8-7s-3.582-7-8-7-8 3.134-8 7c0 1.76.743 3.37 1.97 4.6-.097 1.016-.417 2.13-.771 2.966-.079.186.074.394.273.362 2.256-.37 3.597-.938 4.18-1.234A9.06 9.06 0 0 0 8 15z"/></svg>';
-      var prevPos = found.style.position;
-      var computedPos = window.getComputedStyle(found).position;
-      if (computedPos === 'static') found.style.position = 'relative';
-      found.appendChild(badge);
-      _cmMarkers.push({ el: found, badge: badge, prevPos: prevPos, wasStatic: computedPos === 'static' });
+      layer.appendChild(badge);
+      _cmMarkers.push({ el: found, badge: badge });
     }
     _cmRendering = false;
   }
@@ -104,6 +124,7 @@ const COMPANION_SCRIPT = `<script>
     clearTimeout(_cmMutationTimer);
     _cmMutationTimer = setTimeout(function() {
       renderMarkers(_cmLastComments);
+      repositionMarkers();
       if (_cmFocusedHighlight) tryFocusHighlight(1);
     }, 300);
   });
@@ -403,6 +424,7 @@ const COMPANION_SCRIPT = `<script>
 
   // Re-send element position on scroll so floating popovers stay anchored
   window.addEventListener('scroll', function() {
+    repositionMarkers();
     if (_cmFocusedEl) {
       var r = _cmFocusedEl.getBoundingClientRect();
       window.parent.postMessage({ type: 'cm-element-positioned', x: Math.round(r.left + r.width / 2), y: Math.round(r.top) }, '*');

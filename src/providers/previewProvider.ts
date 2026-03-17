@@ -170,7 +170,7 @@ export class PreviewProvider {
 
   private async notifyCommitReminder(commentCount: number): Promise<void> {
     const lastMilestone = this.context.workspaceState.get<number>('commitReminderAt') ?? 0;
-    if (commentCount % 10 !== 0 || commentCount <= lastMilestone) return;
+    if (commentCount % 10 !== 0 || commentCount < lastMilestone) return;
     const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
     const uncommitted = await hasUncommittedIdeComments(cwd);
     if (!uncommitted) return;
