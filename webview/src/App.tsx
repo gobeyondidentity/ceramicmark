@@ -306,7 +306,7 @@ export function App(): React.ReactElement {
     vscodeApi.postMessage({ type: 'setTargetUrl', url });
   };
 
-  const memberNames = state.members.map((m) => m.name);
+  const memberNames = [...new Set(state.members.map((m) => m.name))];
   const focusedComment = state.focusedCommentId
     ? (state.comments.find((c) => c.id === state.focusedCommentId) ?? null)
     : null;
