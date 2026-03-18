@@ -38,6 +38,10 @@ const COMPANION_SCRIPT = `<script>
     el.style.outline = '2px dashed rgba(255,111,0,0.6)';
   }
 
+  function badgeLeft(r) {
+    return r.width > 180 ? Math.round(r.left + 20) : Math.round(r.right - 12);
+  }
+
   function getOrCreateBadgeLayer() {
     var layer = document.getElementById('cm-badge-layer');
     if (!layer) {
@@ -54,7 +58,7 @@ const COMPANION_SCRIPT = `<script>
       var m = _cmMarkers[i];
       var r = m.el.getBoundingClientRect();
       m.badge.style.top = Math.round(r.top - 12) + 'px';
-      m.badge.style.left = Math.round(r.right - 12) + 'px';
+      m.badge.style.left = badgeLeft(r) + 'px';
     }
   }
 
@@ -75,10 +79,12 @@ const COMPANION_SCRIPT = `<script>
       var c = comments[i];
       if (c.status === 'resolved') continue;
       var key = (c.elementId || '') + '|' + (c.testId || '') + '|' + (c.tag || '') + '|' + (c.text || '').slice(0, 20);
-      if (!groups[key]) groups[key] = { anchor: c, firstId: c.id, count: 0 };
+      if (!groups[key]) groups[key] = { anchor: c, firstId: c.id, ids: [], count: 0 };
+      groups[key].ids.push(c.id);
       groups[key].count++;
     }
     var layer = getOrCreateBadgeLayer();
+    var orphanedIds = [];
     for (var k in groups) {
       var g = groups[k];
       var a = g.anchor;
@@ -87,12 +93,20 @@ const COMPANION_SCRIPT = `<script>
       if (!found && a.testId) found = document.querySelector('[data-testid="' + a.testId + '"]');
       if (!found && a.tag && a.text) {
         var els = document.querySelectorAll(a.tag);
+        var bestEl = null;
+        var bestArea = Infinity;
         for (var j = 0; j < els.length; j++) {
-          if ((els[j].textContent || '').trim().indexOf(a.text) !== -1) { found = els[j]; break; }
+          if ((els[j].textContent || '').trim().indexOf(a.text) !== -1) {
+            var er = els[j].getBoundingClientRect();
+            var area = er.width * er.height;
+            if (area > 0 && area < bestArea) { bestEl = els[j]; bestArea = area; }
+          }
         }
+        found = bestEl;
       }
       if (!found && a.cssPath) { try { found = document.querySelector(a.cssPath); } catch(e) {} }
       if (!found || found === document.body || found === document.documentElement) {
+        for (var oi = 0; oi < g.ids.length; oi++) orphanedIds.push(g.ids[oi]);
         continue;
       }
       var r = found.getBoundingClientRect();
@@ -101,11 +115,12 @@ const COMPANION_SCRIPT = `<script>
       badge.setAttribute('data-cm-comment-id', g.firstId);
       badge.style.cssText = 'position:fixed;width:24px;height:24px;background:#FF6F00;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;pointer-events:auto;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.5);';
       badge.style.top = Math.round(r.top - 12) + 'px';
-      badge.style.left = Math.round(r.right - 12) + 'px';
+      badge.style.left = badgeLeft(r) + 'px';
       badge.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="#fff" viewBox="0 0 16 16"><path d="M8 15c4.418 0 8-3.134 8-7s-3.582-7-8-7-8 3.134-8 7c0 1.76.743 3.37 1.97 4.6-.097 1.016-.417 2.13-.771 2.966-.079.186.074.394.273.362 2.256-.37 3.597-.938 4.18-1.234A9.06 9.06 0 0 0 8 15z"/></svg>';
       layer.appendChild(badge);
       _cmMarkers.push({ el: found, badge: badge });
     }
+    window.parent.postMessage({ type: 'cm-orphaned-comments', ids: orphanedIds }, '*');
     _cmRendering = false;
   }
 

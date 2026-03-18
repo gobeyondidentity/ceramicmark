@@ -26,6 +26,7 @@ interface State {
   sidebarOpen: boolean;
   connectionFailed: boolean;
   hoveredCommentId: string | null;
+  orphanedCommentIds: Set<string>;
 }
 
 type Action =
@@ -50,7 +51,8 @@ type Action =
   | { type: 'TOGGLE_SIDEBAR' }
   | { type: 'SET_SIDEBAR'; open: boolean }
   | { type: 'CONNECTION_FAILED' }
-  | { type: 'HOVER_COMMENT'; commentId: string | null };
+  | { type: 'HOVER_COMMENT'; commentId: string | null }
+  | { type: 'SET_ORPHANED_COMMENTS'; ids: string[] };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -140,6 +142,8 @@ function reducer(state: State, action: Action): State {
       return { ...state, sidebarOpen: action.open };
     case 'HOVER_COMMENT':
       return { ...state, hoveredCommentId: action.commentId };
+    case 'SET_ORPHANED_COMMENTS':
+      return { ...state, orphanedCommentIds: new Set(action.ids) };
     default:
       return state;
   }
@@ -165,6 +169,7 @@ const initialState: State = {
   sidebarOpen: true,
   connectionFailed: false,
   hoveredCommentId: null,
+  orphanedCommentIds: new Set(),
 };
 
 export function App(): React.ReactElement {
@@ -223,6 +228,10 @@ export function App(): React.ReactElement {
       }
       if (message.type === 'cm-pending-positioned') {
         dispatch({ type: 'SET_PENDING_POSITION', x: message.x as number, y: message.y as number });
+        return;
+      }
+      if (message.type === 'cm-orphaned-comments') {
+        dispatch({ type: 'SET_ORPHANED_COMMENTS', ids: (message.ids as string[]) || [] });
         return;
       }
       if (message.type === 'cm-marker-clicked') {
@@ -393,6 +402,7 @@ export function App(): React.ReactElement {
           currentPage={state.currentPage}
           focusedCommentId={state.focusedCommentId}
           unreadIds={state.unreadIds}
+          orphanedCommentIds={state.orphanedCommentIds}
           onFocusComment={(id) => dispatch({ type: 'FOCUS_COMMENT', commentId: id })}
           onMarkRead={(id) => dispatch({ type: 'MARK_READ', commentId: id })}
           onHoverComment={(id) => dispatch({ type: 'HOVER_COMMENT', commentId: id })}
@@ -416,7 +426,7 @@ function SplashScreen({ onUrlChange }: { onUrlChange: (url: string) => void }): 
 
   return (
     <div
-      className="flex flex-1 flex-col items-center justify-center gap-6 h-screen"
+      className="relative flex flex-1 flex-col items-center justify-center gap-6 h-screen"
       style={bgUri ? { backgroundImage: `url(${bgUri})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
     >
       <div
@@ -455,6 +465,13 @@ function SplashScreen({ onUrlChange }: { onUrlChange: (url: string) => void }): 
       <p className="text-xs text-center w-80" style={{ color: 'rgba(255,255,255,0.6)' }}>
         An extension that lets product builders leave visual comments directly on a live localhost preview — Run a dev server, enter your localhost, Collaborate.
       </p>
+      <span
+        className="absolute text-xs"
+        style={{ bottom: '24px', color: 'rgba(255,255,255,0.35)' }}
+        aria-hidden="true"
+      >
+        v{__APP_VERSION__}
+      </span>
     </div>
   );
 }
