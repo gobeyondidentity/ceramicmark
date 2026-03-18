@@ -40,6 +40,16 @@ npm run watch:ext      # watch extension host only
 npm run watch:webview  # watch webview only (Vite dev server)
 ```
 
+## Versioning and packaging
+
+When the user asks to bump the version (e.g. "update the vsix version", "increment the version"), always:
+1. Update `"version"` in `package.json`
+2. Run `npm run compile` to rebuild with the new version baked in (splash screen reads it)
+3. Run `npm run package` (`vsce package`) to produce the `.vsix` file
+4. Commit both `package.json` and the new `.vsix` file together
+
+`npm run package` = `vsce package` — produces `ceramic-mark-{version}.vsix` in the project root. This is the file distributed to beta users.
+
 Launch for development: `Fn+F5` in VS Code opens an Extension Development Host.
 
 ## Design instructions
