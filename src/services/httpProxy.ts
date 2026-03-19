@@ -191,7 +191,7 @@ const COMPANION_SCRIPT = `<script>
     el.style.boxShadow = '0 0 0 4px rgba(255,111,0,0.25)';
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     var r = el.getBoundingClientRect();
-    window.parent.postMessage({ type: 'cm-element-positioned', x: Math.round(r.left + r.width / 2), y: Math.round(r.top) }, '*');
+    window.parent.postMessage({ type: 'cm-element-positioned', x: badgeLeft(r), y: Math.round(r.top - 12) }, '*');
     // JS-driven outline pulse — reliable across VS Code webview iframe environments
     var flashEl = el;
     var pulseSteps = ['4px solid #FF6F00', '2px solid rgba(255,111,0,0.25)', '4px solid #FF6F00', '2px solid #FF6F00'];
@@ -442,7 +442,7 @@ const COMPANION_SCRIPT = `<script>
     repositionMarkers();
     if (_cmFocusedEl) {
       var r = _cmFocusedEl.getBoundingClientRect();
-      window.parent.postMessage({ type: 'cm-element-positioned', x: Math.round(r.left + r.width / 2), y: Math.round(r.top) }, '*');
+      window.parent.postMessage({ type: 'cm-element-positioned', x: badgeLeft(r), y: Math.round(r.top - 12) }, '*');
     }
     if (_cmPendingEl) {
       var rp = _cmPendingEl.getBoundingClientRect();

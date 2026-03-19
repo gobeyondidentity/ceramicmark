@@ -108,3 +108,4 @@ git config user.email
 - [ ] Link comment pins directly to specific lines of source code
 - [ ] Standalone browser mode — run as a local web app (`ceramicmark serve`) without VS Code, using the same HTTP proxy and comment storage
 - [ ] Upgrade Vite to v8 in the webview — resolves remaining esbuild dev-server vulnerability; deferred as a breaking change requiring config migration *(low urgency: only affects local dev, not published extension)*
+- [ ] Auto-detect running dev servers on the splash screen — scan common localhost ports (3000, 3001, 4000, 5173, 8080, etc.) on activation and pre-fill the URL input with the detected address so the user only needs to press Enter; if multiple servers are found, show a small dropdown below the input listing all candidates so the user can select the right one before confirming

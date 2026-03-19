@@ -62,17 +62,6 @@ export function CommentThread({ comment, memberNames, onClose }: CommentThreadPr
             {comment.status === 'open' ? 'Resolve' : 'Reopen'}
           </button>
           <button
-            onClick={() => vscodeApi.postMessage({ type: 'deleteComment', commentId: comment.id })}
-            className="opacity-60 hover:opacity-100 flex items-center"
-            title="Delete comment"
-            aria-label="Delete comment"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
-              <path fillRule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
-            </svg>
-          </button>
-          <button
             onClick={onClose}
             className="text-xs opacity-60 hover:opacity-100"
             title="Close"
@@ -103,12 +92,12 @@ export function CommentThread({ comment, memberNames, onClose }: CommentThreadPr
         ))}
       </div>
 
-      {/* Reply input */}
-      {comment.status === 'open' && (
-        <div
-          className="px-3 py-2 shrink-0 flex flex-col gap-2"
-          style={{ borderTop: '1px solid var(--vscode-panel-border, #454545)' }}
-        >
+      {/* Footer: reply input (open only) + delete/reply action row */}
+      <div
+        className="px-3 py-2 shrink-0 flex flex-col gap-2"
+        style={{ borderTop: '1px solid var(--vscode-panel-border, #454545)' }}
+      >
+        {comment.status === 'open' && (
           <MentionTextarea
             value={replyBody}
             onChange={setReplyBody}
@@ -126,19 +115,34 @@ export function CommentThread({ comment, memberNames, onClose }: CommentThreadPr
               border: '1px solid var(--vscode-input-border, #555)',
             }}
           />
+        )}
+        <div className="flex items-center justify-between">
           <button
-            onClick={submitReply}
-            disabled={!replyBody.trim()}
-            className="self-end text-xs px-3 py-1 rounded disabled:opacity-40"
-            style={{
-              background: 'var(--vscode-button-background, #FF6F00)',
-              color: 'var(--vscode-button-foreground, #fff)',
-            }}
+            onClick={() => vscodeApi.postMessage({ type: 'deleteComment', commentId: comment.id })}
+            className="opacity-40 hover:opacity-100 flex items-center"
+            title="Delete comment"
+            aria-label="Delete comment"
           >
-            Reply
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+              <path fillRule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+            </svg>
           </button>
+          {comment.status === 'open' && (
+            <button
+              onClick={submitReply}
+              disabled={!replyBody.trim()}
+              className="text-xs px-3 py-1 rounded disabled:opacity-40"
+              style={{
+                background: 'var(--vscode-button-background, #FF6F00)',
+                color: 'var(--vscode-button-foreground, #fff)',
+              }}
+            >
+              Reply
+            </button>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
