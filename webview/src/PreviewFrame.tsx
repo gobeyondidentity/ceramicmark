@@ -16,6 +16,7 @@ interface PreviewFrameProps {
   currentPage: string;
   currentTitle: string;
   iframeReadyAt: number;
+  pinsVisible: boolean;
   comments: Comment[];
   memberNames: string[];
   connectionFailed: boolean;
@@ -38,6 +39,7 @@ export function PreviewFrame({
   currentPage,
   currentTitle,
   iframeReadyAt,
+  pinsVisible,
   comments,
   memberNames,
   connectionFailed,
@@ -58,6 +60,8 @@ export function PreviewFrame({
   useEffect(() => { commentsRef.current = comments; }, [comments]);
   useEffect(() => { currentPageRef.current = currentPage; }, [currentPage]);
   useEffect(() => { currentTitleRef.current = currentTitle; }, [currentTitle]);
+  const pinsVisibleRef = useRef(pinsVisible);
+  useEffect(() => { pinsVisibleRef.current = pinsVisible; }, [pinsVisible]);
 
   // Exit comment mode on Escape
   useEffect(() => {
@@ -77,47 +81,49 @@ export function PreviewFrame({
     );
   }, [commentMode]);
 
-  // Send all markers when comment data changes (new comment added, deleted, etc.)
+  // Send all markers when comment data or pin visibility changes
   useEffect(() => {
-    const markerData = comments.map((c) => ({
-      id: c.id,
-      elementId: c.anchor?.elementId,
-      testId: c.anchor?.testId,
-      tag: c.anchor?.tag,
-      text: c.anchor?.text,
-      cssPath: c.anchor?.cssPath,
-      status: c.status,
-    }));
+    const markerData = pinsVisible
+      ? comments.map((c) => ({
+          id: c.id,
+          elementId: c.anchor?.elementId,
+          testId: c.anchor?.testId,
+          tag: c.anchor?.tag,
+          text: c.anchor?.text,
+          cssPath: c.anchor?.cssPath,
+          status: c.status,
+        }))
+      : [];
     iframeRef.current?.contentWindow?.postMessage(
       { type: 'cm-update-markers', comments: markerData },
       '*',
     );
-  }, [comments]);
+  }, [comments, pinsVisible]);
 
   // Send page-filtered markers when the companion script signals it's ready
   // (iframeReadyAt updates every time cm-navigate fires, which the companion script
   // sends after registering all its listeners — so the message is never lost to a race).
   useEffect(() => {
     if (!iframeReadyAt) return;
-    const markerData = commentsRef.current
-      .filter((c) => {
-        if ((c.anchor?.pageUrl ?? '/') !== currentPageRef.current) return false;
-        // If the comment has a pageTitle and we know the current title, only show it on the
-        // matching view (handles React-state apps where URL stays at '/' across all sections).
-        const commentTitle = c.anchor?.pageTitle;
-        const curTitle = currentTitleRef.current;
-        if (commentTitle && curTitle && commentTitle !== curTitle) return false;
-        return true;
-      })
-      .map((c) => ({
-        id: c.id,
-        elementId: c.anchor?.elementId,
-        testId: c.anchor?.testId,
-        tag: c.anchor?.tag,
-        text: c.anchor?.text,
-        cssPath: c.anchor?.cssPath,
-        status: c.status,
-      }));
+    const markerData = pinsVisibleRef.current
+      ? commentsRef.current
+          .filter((c) => {
+            if ((c.anchor?.pageUrl ?? '/') !== currentPageRef.current) return false;
+            const commentTitle = c.anchor?.pageTitle;
+            const curTitle = currentTitleRef.current;
+            if (commentTitle && curTitle && commentTitle !== curTitle) return false;
+            return true;
+          })
+          .map((c) => ({
+            id: c.id,
+            elementId: c.anchor?.elementId,
+            testId: c.anchor?.testId,
+            tag: c.anchor?.tag,
+            text: c.anchor?.text,
+            cssPath: c.anchor?.cssPath,
+            status: c.status,
+          }))
+      : [];
     iframeRef.current?.contentWindow?.postMessage(
       { type: 'cm-update-markers', comments: markerData },
       '*',
@@ -198,15 +204,17 @@ export function PreviewFrame({
     const win = iframeRef.current?.contentWindow;
     if (!win) return;
 
-    const markerData = commentsRef.current.map((c) => ({
-      id: c.id,
-      elementId: c.anchor?.elementId,
-      testId: c.anchor?.testId,
-      tag: c.anchor?.tag,
-      text: c.anchor?.text,
-      cssPath: c.anchor?.cssPath,
-      status: c.status,
-    }));
+    const markerData = pinsVisibleRef.current
+      ? commentsRef.current.map((c) => ({
+          id: c.id,
+          elementId: c.anchor?.elementId,
+          testId: c.anchor?.testId,
+          tag: c.anchor?.tag,
+          text: c.anchor?.text,
+          cssPath: c.anchor?.cssPath,
+          status: c.status,
+        }))
+      : [];
     win.postMessage({ type: 'cm-update-markers', comments: markerData }, '*');
 
     const fc = focusedCommentRef.current;

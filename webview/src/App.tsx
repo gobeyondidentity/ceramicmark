@@ -27,6 +27,7 @@ interface State {
   connectionFailed: boolean;
   hoveredCommentId: string | null;
   orphanedCommentIds: Set<string>;
+  pinsVisible: boolean;
 }
 
 type Action =
@@ -52,7 +53,8 @@ type Action =
   | { type: 'SET_SIDEBAR'; open: boolean }
   | { type: 'CONNECTION_FAILED' }
   | { type: 'HOVER_COMMENT'; commentId: string | null }
-  | { type: 'SET_ORPHANED_COMMENTS'; ids: string[] };
+  | { type: 'SET_ORPHANED_COMMENTS'; ids: string[] }
+  | { type: 'TOGGLE_PINS' };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -144,6 +146,8 @@ function reducer(state: State, action: Action): State {
       return { ...state, hoveredCommentId: action.commentId };
     case 'SET_ORPHANED_COMMENTS':
       return { ...state, orphanedCommentIds: new Set(action.ids) };
+    case 'TOGGLE_PINS':
+      return { ...state, pinsVisible: !state.pinsVisible };
     default:
       return state;
   }
@@ -170,6 +174,7 @@ const initialState: State = {
   connectionFailed: false,
   hoveredCommentId: null,
   orphanedCommentIds: new Set(),
+  pinsVisible: true,
 };
 
 export function App(): React.ReactElement {
@@ -345,6 +350,50 @@ export function App(): React.ReactElement {
     vscodeApi.postMessage({ type: 'setTargetUrl', url });
   };
 
+  const handleRefresh = () => {
+    if (state.displayUrl) {
+      vscodeApi.postMessage({ type: 'setTargetUrl', url: state.displayUrl });
+    }
+  };
+
+  // Cmd+R / Ctrl+R to refresh preview
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'r' && (e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey) {
+        e.preventDefault();
+        handleRefresh();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  });
+
+  // 'V' key toggles pin visibility
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== 'v' && e.key !== 'V') return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+      dispatch({ type: 'TOGGLE_PINS' });
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  // 'S' key toggles sidebar
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== 's' && e.key !== 'S') return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+      dispatch({ type: 'TOGGLE_SIDEBAR' });
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
   const memberNames = [...new Set(state.members.map((m) => m.name))];
   const focusedComment = state.focusedCommentId
     ? (state.comments.find((c) => c.id === state.focusedCommentId) ?? null)
@@ -367,6 +416,9 @@ export function App(): React.ReactElement {
           currentBranch={state.currentBranch}
           sidebarOpen={state.sidebarOpen}
           onUrlChange={handleUrlChange}
+          onRefresh={handleRefresh}
+          pinsVisible={state.pinsVisible}
+          onTogglePins={() => dispatch({ type: 'TOGGLE_PINS' })}
           onToggleCommentMode={() => dispatch({ type: 'TOGGLE_COMMENT_MODE' })}
           onToggleSidebar={() => dispatch({ type: 'TOGGLE_SIDEBAR' })}
         />
@@ -383,6 +435,7 @@ export function App(): React.ReactElement {
           currentPage={state.currentPage}
           currentTitle={state.currentTitle}
           iframeReadyAt={state.iframeReadyAt}
+          pinsVisible={state.pinsVisible}
           comments={state.comments}
           memberNames={memberNames}
           connectionFailed={state.connectionFailed}

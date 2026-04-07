@@ -34,7 +34,9 @@ Comments are stored in `.ide-comments/comments.json` inside your project — the
 - **Branch-scoped view** — comments store the branch they were made on; the toolbar shows the active git branch and updates automatically when you switch branches; comments from other branches are hidden
 - **Commit reminder** — a toast appears at every 10-comment milestone when `.ide-comments/` has uncommitted changes, so you don't forget to share with the team
 - **Orphaned comment indicator** — if the element a comment was anchored to no longer exists in the DOM, a warning icon appears on the sidebar card so teammates know the anchor is stale
-- **Keyboard shortcuts** — `C` toggles comment mode (Figma-style); `R` resolves (or reopens) the focused comment; `Esc` exits comment mode
+- **Refresh preview** — click the refresh icon in the URL bar or press `⌘R` / `Ctrl+R` to reload the previewed page without leaving the panel
+- **Pin visibility toggle** — hide or show all comment pins on the preview with the eye icon or `V` key, so you can view the page without visual clutter
+- **Keyboard shortcuts** — `C` toggles comment mode; `R` resolves/reopens the focused comment; `V` toggles pin visibility; `S` toggles sidebar; `⌘R` refreshes the preview; `Esc` exits comment mode
 - **Responsive sidebar** — auto-collapses below 640px so the preview always gets enough space
 - **Version label** — current extension version shown at the bottom of the splash screen for quick identification
 

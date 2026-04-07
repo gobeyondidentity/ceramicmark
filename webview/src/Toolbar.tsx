@@ -6,7 +6,10 @@ interface ToolbarProps {
   commentMode: boolean;
   currentBranch: string | null;
   sidebarOpen: boolean;
+  pinsVisible: boolean;
   onUrlChange: (url: string) => void;
+  onRefresh: () => void;
+  onTogglePins: () => void;
   onToggleCommentMode: () => void;
   onToggleSidebar: () => void;
 }
@@ -16,7 +19,10 @@ export function Toolbar({
   commentMode,
   currentBranch,
   sidebarOpen,
+  pinsVisible,
   onUrlChange,
+  onRefresh,
+  onTogglePins,
   onToggleCommentMode,
   onToggleSidebar,
 }: ToolbarProps): React.ReactElement {
@@ -82,14 +88,55 @@ export function Toolbar({
               border: '1px solid #FF6F00',
             }}
           />
+          <button
+            type="button"
+            onClick={onRefresh}
+            title="Reload the previewed page (⌘R)"
+            aria-label="Refresh preview"
+            className="shrink-0 flex items-center px-1 py-1 rounded hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+            style={{ color: '#FF6F00' }}
+          >
+            {/* Bootstrap Icon: arrow-repeat */}
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z"/>
+              <path fillRule="evenodd" d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"/>
+            </svg>
+          </button>
         </form>
+
+        {/* Pin visibility toggle */}
+        <button
+          onClick={onTogglePins}
+          aria-pressed={pinsVisible}
+          aria-label={pinsVisible ? 'Hide comment pins' : 'Show comment pins'}
+          title={pinsVisible ? 'Hide comment pins on the preview (V)' : 'Show comment pins on the preview (V)'}
+          className="shrink-0 flex items-center px-1.5 py-1 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+          style={{
+            color: pinsVisible ? '#FF6F00' : 'var(--vscode-titleBar-activeForeground, #ccc)',
+            opacity: pinsVisible ? 1 : 0.5,
+          }}
+        >
+          {pinsVisible ? (
+            /* Bootstrap Icon: eye-fill */
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>
+              <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
+            </svg>
+          ) : (
+            /* Bootstrap Icon: eye-slash-fill */
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="m10.79 12.912-1.614-1.615a3.5 3.5 0 0 1-4.474-4.474l-2.06-2.06C.938 6.278 0 8 0 8s3 5.5 8 5.5a7.029 7.029 0 0 0 2.79-.588zM5.21 3.088A7.028 7.028 0 0 1 8 2.5c5 0 8 5.5 8 5.5s-.939 1.721-2.641 3.238l-2.062-2.062a3.5 3.5 0 0 0-4.474-4.474L5.21 3.088z"/>
+              <path d="M5.525 7.646a2.5 2.5 0 0 0 2.829 2.829l-2.83-2.829zm4.95.708-2.829-2.83a2.5 2.5 0 0 1 2.829 2.829zm3.171 6-12-12 .708-.708 12 12-.708.708z"/>
+            </svg>
+          )}
+        </button>
 
         {/* Sidebar toggle */}
         <button
           onClick={onToggleSidebar}
           aria-pressed={sidebarOpen}
           aria-label={sidebarOpen ? 'Hide comments sidebar' : 'Show comments sidebar'}
-          title={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
+          title={sidebarOpen ? 'Hide the comments sidebar (S)' : 'Show the comments sidebar (S)'}
           className="shrink-0 flex items-center px-1.5 py-1 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
           style={{
             color: sidebarOpen ? '#FF6F00' : 'var(--vscode-titleBar-activeForeground, #ccc)',
