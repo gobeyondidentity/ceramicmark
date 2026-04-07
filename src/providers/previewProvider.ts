@@ -68,6 +68,7 @@ export class PreviewProvider {
         this.postMessage({ type: 'setBranch', branch });
       };
       headWatcher.onDidChange(refreshBranch);
+      headWatcher.onDidCreate(refreshBranch);
       this.panel.onDidDispose(() => headWatcher.dispose());
     }
   }
