@@ -1,6 +1,38 @@
 // Mirror of src/types.ts for the webview bundle
 // Keep in sync with the extension host types
 
+// --- cm-* protocol + CDP types (mirror of src/companion/cmProtocol.ts) ---
+export interface CmPageToHost {
+  type: string;
+  [key: string]: unknown;
+}
+export interface CmHostToPage {
+  type: string;
+  [key: string]: unknown;
+}
+export type CdpInputEvent =
+  | {
+      kind: 'mouse';
+      eventType: 'mouseMoved' | 'mousePressed' | 'mouseReleased';
+      x: number;
+      y: number;
+      button?: 'none' | 'left' | 'middle' | 'right';
+      clickCount?: number;
+      buttons?: number;
+      modifiers?: number;
+    }
+  | { kind: 'wheel'; x: number; y: number; deltaX: number; deltaY: number; modifiers?: number }
+  | {
+      kind: 'key';
+      eventType: 'keyDown' | 'keyUp' | 'char';
+      key?: string;
+      code?: string;
+      text?: string;
+      windowsVirtualKeyCode?: number;
+      modifiers?: number;
+    };
+export type ChromeStatus = 'launching' | 'connected' | 'login' | 'authenticated' | 'crashed';
+
 export interface Author {
   name: string;
   email: string;
@@ -61,7 +93,23 @@ export type ExtensionMessage =
   | { type: 'loadMembers'; members: Member[] }
   | { type: 'setBranch'; branch: string }
   | { type: 'proxyReady'; displayUrl: string; proxyUrl: string }
-  | { type: 'toggleCommentMode' };
+  | { type: 'toggleCommentMode' }
+  // --- Browser (CDP) mode ---
+  | { type: 'modeChanged'; mode: 'proxy' | 'cdp' }
+  | { type: 'chromeStatus'; status: ChromeStatus; url?: string }
+  | { type: 'chromeNotFound' }
+  | {
+      type: 'screencastFrame';
+      dataUri: string;
+      deviceWidth: number;
+      deviceHeight: number;
+      pageScaleFactor: number;
+      scrollOffsetX: number;
+      scrollOffsetY: number;
+    }
+  | { type: 'requestLoginPopout' }
+  | { type: 'cmFromPage'; payload: CmPageToHost }
+  | { type: 'cdpDebug'; produced: number; screencasting: boolean; error?: string };
 
 export type WebviewMessage =
   | { type: 'ready' }
@@ -71,4 +119,11 @@ export type WebviewMessage =
   | { type: 'resolveComment'; commentId: string }
   | { type: 'reopenComment'; commentId: string }
   | { type: 'deleteComment'; commentId: string }
-  | { type: 'requestComments' };
+  | { type: 'requestComments' }
+  // --- Browser (CDP) mode ---
+  | { type: 'setPreviewMode'; mode: 'proxy' | 'cdp' }
+  | { type: 'inputEvent'; event: CdpInputEvent }
+  | { type: 'resizeViewport'; cssWidth: number; cssHeight: number; dpr: number }
+  | { type: 'cmToPage'; payload: CmHostToPage }
+  | { type: 'pickBrowserPath' }
+  | { type: 'requestScreencastResume' };

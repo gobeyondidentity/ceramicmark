@@ -115,6 +115,32 @@ Extension → Webview:  ExtensionMessage (postMessage from panel.webview)
 
 All message types are defined in `src/types.ts` / `webview/src/types.ts`.
 
+## URL / address bar / proxy path model
+
+The previewed target is split into two independent pieces of webview state:
+
+- `displayUrl` — the **origin** only (`scheme://host[:port]`). This is what the `HttpProxy` points at. Switching it (e.g. `localhost` → a LAN IP) re-points the proxy.
+- `currentPage` — the live **path** (`pathname + search + hash`), updated by the companion script's `cm-navigate` message as the user navigates inside the iframe.
+
+The toolbar address bar displays `displayUrl + currentPage` and syncs to live navigation (the input only updates when it isn't focused, so it never clobbers typing). Submitting the bar:
+
+- **Same origin + proxy already running** → dispatch `NAVIGATE` (no proxy round-trip); the iframe loads `proxyBase + path` in place.
+- **Different origin / first connect** → dispatch `SET_URL` + post `setTargetUrl` with the full URL; the path is recovered from the echoed `displayUrl` in `proxyReady` and applied via `SET_PROXY_URL`.
+
+Key state pieces: `proxyBase` (proxy root `http://127.0.0.1:port`, used to build navigation targets and the focus-comment cross-page jump) and `iframeKey` (bumped on every explicit (re)load and used as the iframe's React `key` to force a remount/reload even when the URL string is unchanged — e.g. refresh). Internal `cm-navigate` updates `currentPage` only; it must never change `iframeUrl`/`iframeKey` or it would cause a reload loop.
+
+**IP addresses**: because all traffic is proxied through `127.0.0.1`, a LAN-IP target loads in the iframe without mixed-content blocking.
+
+**HTTPS upstreams**: `HttpProxy` picks `https.request` / `tls.connect` when the target is `https:` (port defaults to 443), with `rejectUnauthorized: false` so self-signed dev certs work. The proxy itself always serves the iframe over plain `http://127.0.0.1`.
+
+**Authentication (Tier 1 — app-owned login).** The proxy presents the app at a synthetic origin, which normally breaks auth, so `HttpProxy` actively rewrites two things to keep app-owned login/session flows working:
+- **`Set-Cookie`** (`rewriteSetCookie`): drops `Domain=`, and forces `SameSite=None; Secure` so the browser stores and sends the cookie inside the cross-origin webview iframe (127.0.0.1 is a secure context in Chromium even over http, so `Secure` is honored). `set-cookie` is deliberately *not* in `BLOCKED_HEADERS`.
+- **`Location`** response headers that point at the target origin → rewritten to relative, so login→dashboard redirects stay inside the proxy instead of escaping to the real origin.
+
+What this does *not* cover: **cross-origin SSO** (a redirect to a separate Keycloak/Okta host). The proxy is single-target, so the IdP origin isn't proxied (it can't be framed, and `redirect_uri` won't match the synthetic origin). That's the README "Cross-origin SSO" roadmap item — it needs either a multi-origin rewriting proxy or a real-browser preview. The `HttpProxy` tests/harness live in the scratchpad, not the repo.
+
+**Comment page-scoping is path-only** (`anchor.pageUrl` = path), deliberately host-independent: a comment made against `192.168.1.5:3000/foo` shows on `localhost:3000/foo` too, since it's the same app on a different host.
+
 ## Splash screen vs loaded state
 
 - **No URL set** (`state.previewUrl === ''`): renders `<SplashScreen>` — fullscreen background image, logo, centered URL input. Toolbar is hidden.

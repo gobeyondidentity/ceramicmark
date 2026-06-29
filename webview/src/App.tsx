@@ -3,12 +3,19 @@ import logoSvg from './ceramicmark_logo.svg?raw';
 import { vscodeApi } from './vscode.js';
 import { Toolbar } from './Toolbar.js';
 import { PreviewFrame } from './PreviewFrame.js';
+import { CdpBrowserFrame } from './CdpBrowserFrame.js';
 import { CommentSidebar } from './CommentSidebar.js';
-import type { Author, Comment, ElementAnchor, ExtensionMessage, Member } from './types.js';
+import type { Author, ChromeStatus, Comment, ElementAnchor, ExtensionMessage, Member } from './types.js';
 
 interface State {
+  /** Origin of the previewed server (scheme://host[:port]). The path lives in `currentPage`. */
   displayUrl: string;
+  /** Proxy root URL (http://127.0.0.1:port) — used to build iframe navigation targets. */
+  proxyBase: string;
+  /** Full proxy URL the iframe element is bound to (proxyBase + a path). */
   iframeUrl: string;
+  /** Bumped on every explicit (re)load so the iframe remounts even when the URL string is unchanged. */
+  iframeKey: number;
   comments: Comment[];
   identity: Author | null;
   members: Member[];
@@ -28,11 +35,15 @@ interface State {
   hoveredCommentId: string | null;
   orphanedCommentIds: Set<string>;
   pinsVisible: boolean;
+  previewMode: 'proxy' | 'cdp';
+  chromeStatus: ChromeStatus | 'notfound' | null;
 }
 
 type Action =
-  | { type: 'SET_URL'; url: string }
-  | { type: 'SET_PROXY_URL'; iframeUrl: string }
+  | { type: 'SET_URL'; origin: string; path: string }
+  | { type: 'SET_PROXY_URL'; proxyBase: string; path: string }
+  | { type: 'NAVIGATE'; path: string }
+  | { type: 'REFRESH' }
   | { type: 'SET_IDENTITY'; author: Author }
   | { type: 'LOAD_COMMENTS'; comments: Comment[] }
   | { type: 'ADD_COMMENT'; comment: Comment; identityEmail: string | null }
@@ -54,14 +65,48 @@ type Action =
   | { type: 'CONNECTION_FAILED' }
   | { type: 'HOVER_COMMENT'; commentId: string | null }
   | { type: 'SET_ORPHANED_COMMENTS'; ids: string[] }
-  | { type: 'TOGGLE_PINS' };
+  | { type: 'TOGGLE_PINS' }
+  | { type: 'SET_MODE'; mode: 'proxy' | 'cdp' }
+  | { type: 'SET_CHROME_STATUS'; status: ChromeStatus | 'notfound' | null };
+
+/** Split a full URL into its origin (scheme://host[:port]) and path (pathname+search+hash). */
+function splitUrl(raw: string): { origin: string; path: string } | null {
+  try {
+    const u = new URL(raw);
+    return { origin: u.origin, path: u.pathname + u.search + u.hash };
+  } catch {
+    return null;
+  }
+}
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'SET_URL':
-      return { ...state, displayUrl: action.url, iframeUrl: '', connectionFailed: false };
+      return { ...state, displayUrl: action.origin, currentPage: action.path, iframeUrl: '', connectionFailed: false };
     case 'SET_PROXY_URL':
-      return { ...state, iframeUrl: action.iframeUrl, connectionFailed: false };
+      return {
+        ...state,
+        proxyBase: action.proxyBase,
+        iframeUrl: action.proxyBase + action.path,
+        currentPage: action.path,
+        iframeKey: state.iframeKey + 1,
+        connectionFailed: false,
+      };
+    case 'NAVIGATE':
+      return {
+        ...state,
+        currentPage: action.path,
+        iframeUrl: state.proxyBase + action.path,
+        iframeKey: state.iframeKey + 1,
+        connectionFailed: false,
+      };
+    case 'REFRESH':
+      return {
+        ...state,
+        iframeUrl: state.proxyBase + state.currentPage,
+        iframeKey: state.iframeKey + 1,
+        connectionFailed: false,
+      };
     case 'SET_IDENTITY':
       return { ...state, identity: action.author };
     case 'LOAD_COMMENTS':
@@ -148,6 +193,10 @@ function reducer(state: State, action: Action): State {
       return { ...state, orphanedCommentIds: new Set(action.ids) };
     case 'TOGGLE_PINS':
       return { ...state, pinsVisible: !state.pinsVisible };
+    case 'SET_MODE':
+      return { ...state, previewMode: action.mode, chromeStatus: action.mode === 'cdp' ? state.chromeStatus : null };
+    case 'SET_CHROME_STATUS':
+      return { ...state, chromeStatus: action.status };
     default:
       return state;
   }
@@ -155,7 +204,9 @@ function reducer(state: State, action: Action): State {
 
 const initialState: State = {
   displayUrl: '',
+  proxyBase: '',
   iframeUrl: '',
+  iframeKey: 0,
   comments: [],
   identity: null,
   members: [],
@@ -175,6 +226,8 @@ const initialState: State = {
   hoveredCommentId: null,
   orphanedCommentIds: new Set(),
   pinsVisible: true,
+  previewMode: 'proxy',
+  chromeStatus: null,
 };
 
 export function App(): React.ReactElement {
@@ -286,12 +339,27 @@ export function App(): React.ReactElement {
         case 'loadMembers':
           dispatch({ type: 'LOAD_MEMBERS', members: extMsg.members });
           break;
-        case 'proxyReady':
+        case 'proxyReady': {
           proxyOriginRef.current = new URL(extMsg.proxyUrl).origin;
-          dispatch({ type: 'SET_PROXY_URL', iframeUrl: extMsg.proxyUrl });
+          let path = '/';
+          try {
+            const u = new URL(extMsg.displayUrl);
+            path = u.pathname + u.search + u.hash;
+          } catch { /* keep default */ }
+          dispatch({ type: 'SET_PROXY_URL', proxyBase: extMsg.proxyUrl, path });
           break;
+        }
         case 'toggleCommentMode':
           dispatch({ type: 'TOGGLE_COMMENT_MODE' });
+          break;
+        case 'chromeStatus':
+          dispatch({ type: 'SET_CHROME_STATUS', status: extMsg.status });
+          break;
+        case 'chromeNotFound':
+          dispatch({ type: 'SET_CHROME_STATUS', status: 'notfound' });
+          break;
+        case 'modeChanged':
+          // ack — state already reflects the toggle optimistically
           break;
       }
     };
@@ -346,14 +414,35 @@ export function App(): React.ReactElement {
   }, []);
 
   const handleUrlChange = (url: string) => {
-    dispatch({ type: 'SET_URL', url });
-    vscodeApi.postMessage({ type: 'setTargetUrl', url });
+    const normalized = url.startsWith('http') ? url : `http://${url}`;
+    const parts = splitUrl(normalized);
+    if (!parts) return;
+    const { origin, path } = parts;
+    // Same origin and proxy already running → navigate the iframe in place.
+    // Different origin (or first connect) → (re)point the proxy and reload via proxyReady.
+    if (origin === state.displayUrl && state.proxyBase) {
+      dispatch({ type: 'NAVIGATE', path });
+    } else {
+      dispatch({ type: 'SET_URL', origin, path });
+      vscodeApi.postMessage({ type: 'setTargetUrl', url: origin + path });
+    }
   };
 
   const handleRefresh = () => {
-    if (state.displayUrl) {
-      vscodeApi.postMessage({ type: 'setTargetUrl', url: state.displayUrl });
+    if (state.proxyBase) {
+      dispatch({ type: 'REFRESH' });
+    } else if (state.displayUrl) {
+      vscodeApi.postMessage({ type: 'setTargetUrl', url: state.displayUrl + state.currentPage });
     }
+  };
+
+  const handleModeChange = (mode: 'proxy' | 'cdp') => {
+    if (mode === state.previewMode) return;
+    dispatch({ type: 'SET_MODE', mode });
+    vscodeApi.postMessage({ type: 'setPreviewMode', mode });
+    // Reconnect the chosen surface to the current address.
+    const addr = state.displayUrl ? state.displayUrl + state.currentPage : '';
+    if (addr) vscodeApi.postMessage({ type: 'setTargetUrl', url: addr });
   };
 
   // Cmd+R / Ctrl+R to refresh preview
@@ -395,6 +484,8 @@ export function App(): React.ReactElement {
   }, []);
 
   const memberNames = [...new Set(state.members.map((m) => m.name))];
+  // Full address shown in the toolbar: origin + live path.
+  const addressUrl = state.displayUrl ? state.displayUrl + state.currentPage : '';
   const focusedComment = state.focusedCommentId
     ? (state.comments.find((c) => c.id === state.focusedCommentId) ?? null)
     : null;
@@ -411,10 +502,12 @@ export function App(): React.ReactElement {
       {/* Left: toolbar + preview iframe */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <Toolbar
-          previewUrl={state.displayUrl}
+          previewUrl={addressUrl}
           commentMode={state.commentMode}
           currentBranch={state.currentBranch}
           sidebarOpen={state.sidebarOpen}
+          previewMode={state.previewMode}
+          onModeChange={handleModeChange}
           onUrlChange={handleUrlChange}
           onRefresh={handleRefresh}
           pinsVisible={state.pinsVisible}
@@ -422,8 +515,17 @@ export function App(): React.ReactElement {
           onToggleCommentMode={() => dispatch({ type: 'TOGGLE_COMMENT_MODE' })}
           onToggleSidebar={() => dispatch({ type: 'TOGGLE_SIDEBAR' })}
         />
+        {state.previewMode === 'cdp' ? (
+          <CdpBrowserFrame
+            chromeStatus={state.chromeStatus}
+            onPickBrowser={() => vscodeApi.postMessage({ type: 'pickBrowserPath' })}
+            onSwitchToProxy={() => handleModeChange('proxy')}
+          />
+        ) : (
         <PreviewFrame
           iframeUrl={state.iframeUrl}
+          iframeKey={state.iframeKey}
+          proxyBase={state.proxyBase}
           displayUrl={state.displayUrl}
           commentMode={state.commentMode}
           focusedComment={focusedComment}
@@ -444,6 +546,7 @@ export function App(): React.ReactElement {
           onCancelPending={() => dispatch({ type: 'CANCEL_PENDING' })}
           onRetryUrl={() => document.getElementById('toolbar-url-input')?.focus()}
         />
+        )}
       </div>
 
       {/* Right: comments sidebar — hidden when collapsed */}
