@@ -17,7 +17,10 @@ const OUTBOUND_RE = /window\.parent\.postMessage\(/g;
 /** Companion for the HTTP-proxy/iframe surface — byte-equivalent to the original injection. */
 export function getCompanionForProxy(): string {
   const send = 'function __cmSend(p){ window.parent.postMessage(p, "*"); }';
-  return '<script>(function(){' + send + COMPANION_BODY.replace(OUTBOUND_RE, '__cmSend(') + '})();</script>';
+  // Signal just before the document navigates away. If no proxied page reports back, the host
+  // infers the iframe escaped to a cross-origin page (e.g. an SSO provider) and offers Browser mode.
+  const unload = 'window.addEventListener("pagehide", function(){ try { __cmSend({ type: "cm-unload" }); } catch (e) {} });';
+  return '<script>(function(){' + send + COMPANION_BODY.replace(OUTBOUND_RE, '__cmSend(') + unload + '})();</script>';
 }
 
 /** Companion for the CDP browser surface. `bindingName` is registered via Runtime.addBinding. */

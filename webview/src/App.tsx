@@ -238,9 +238,17 @@ export function App(): React.ReactElement {
   const proxyOriginRef = useRef<string | null>(null);
   const focusedCommentIdRef = useRef<string | null>(null);
   const commentsRef = useRef(state.comments);
+  // Auto-switch-to-Browser detection: when a proxied page navigates away and no proxied page
+  // reports back, the iframe escaped to a cross-origin page (e.g. an SSO provider).
+  const previewModeRef = useRef(state.previewMode);
+  const addressRef = useRef('');
+  const escapeTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const autoSwitchedRef = useRef(false);
   useEffect(() => { hasUrlRef.current = !!state.displayUrl; }, [state.displayUrl]);
   useEffect(() => { focusedCommentIdRef.current = state.focusedCommentId; }, [state.focusedCommentId]);
   useEffect(() => { commentsRef.current = state.comments; }, [state.comments]);
+  useEffect(() => { previewModeRef.current = state.previewMode; }, [state.previewMode]);
+  useEffect(() => { addressRef.current = state.displayUrl ? state.displayUrl + state.currentPage : ''; }, [state.displayUrl, state.currentPage]);
 
   useEffect(() => {
     if (isMounted.current) return;
@@ -301,12 +309,30 @@ export function App(): React.ReactElement {
         return;
       }
       if (message.type === 'cm-navigate') {
+        // A proxied page reported in → we did not escape to a foreign origin.
+        clearTimeout(escapeTimerRef.current);
         try {
           const parsed = new URL(message.pathname, 'http://x');
           const page = parsed.pathname + parsed.search + parsed.hash;
           dispatch({ type: 'IFRAME_NAVIGATED', pathname: page, title: message.title });
         } catch {
           dispatch({ type: 'IFRAME_NAVIGATED', pathname: message.pathname, title: message.title });
+        }
+        return;
+      }
+      if (message.type === 'cm-unload') {
+        // The proxied page is navigating away. If no proxied page loads back shortly, the iframe
+        // escaped to a cross-origin page (almost always an SSO sign-in) that can't be framed —
+        // auto-switch to Browser mode at the same app URL so the real browser can complete login.
+        if (previewModeRef.current === 'proxy' && !autoSwitchedRef.current) {
+          clearTimeout(escapeTimerRef.current);
+          escapeTimerRef.current = setTimeout(() => {
+            autoSwitchedRef.current = true;
+            const addr = addressRef.current;
+            dispatch({ type: 'SET_MODE', mode: 'cdp' });
+            vscodeApi.postMessage({ type: 'setPreviewMode', mode: 'cdp' });
+            if (addr) vscodeApi.postMessage({ type: 'setTargetUrl', url: addr });
+          }, 2500);
         }
         return;
       }
@@ -414,6 +440,9 @@ export function App(): React.ReactElement {
   }, []);
 
   const handleUrlChange = (url: string) => {
+    // New target → re-enable cross-origin auto-switch detection.
+    autoSwitchedRef.current = false;
+    clearTimeout(escapeTimerRef.current);
     const normalized = url.startsWith('http') ? url : `http://${url}`;
     const parts = splitUrl(normalized);
     if (!parts) return;
@@ -438,6 +467,7 @@ export function App(): React.ReactElement {
 
   const handleModeChange = (mode: 'proxy' | 'cdp') => {
     if (mode === state.previewMode) return;
+    clearTimeout(escapeTimerRef.current);
     dispatch({ type: 'SET_MODE', mode });
     vscodeApi.postMessage({ type: 'setPreviewMode', mode });
     // Reconnect the chosen surface to the current address.
