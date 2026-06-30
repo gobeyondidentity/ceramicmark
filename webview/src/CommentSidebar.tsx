@@ -39,6 +39,8 @@ export function CommentSidebar({
 }: CommentSidebarProps): React.ReactElement {
   const focusedRef = useRef<HTMLButtonElement>(null);
   const [tab, setTab] = useState<'open' | 'resolved'>('open');
+  // 'current' follows the page you're viewing; 'all' shows everything; a path pins to that page.
+  const [pageFilter, setPageFilter] = useState<'current' | 'all' | string>('current');
 
   // Scroll focused comment into view when it changes
   useEffect(() => {
@@ -53,11 +55,30 @@ export function CommentSidebar({
   const openCount = branchComments.filter((c) => c.status === 'open').length;
   const resolvedCount = branchComments.filter((c) => c.status === 'resolved').length;
 
-  // Filter to active tab and current branch before grouping
+  // Distinct pages (within the active tab + branch) for the page-filter dropdown.
+  const pageCounts = new Map<string, number>();
+  for (const c of branchComments) {
+    if (c.status !== tab) continue;
+    const p = c.anchor?.pageUrl || '/';
+    pageCounts.set(p, (pageCounts.get(p) ?? 0) + 1);
+  }
+  const otherPages = [...pageCounts.keys()]
+    .filter((p) => p !== currentPage)
+    .sort((a, b) => a.localeCompare(b));
+  const tabTotal = [...pageCounts.values()].reduce((a, b) => a + b, 0);
+
+  const matchesPageFilter = (c: Comment): boolean => {
+    if (pageFilter === 'all') return true;
+    const target = pageFilter === 'current' ? currentPage : pageFilter;
+    return (c.anchor?.pageUrl || '/') === target;
+  };
+
+  // Filter to active tab, current branch, and selected page before grouping
   const visibleComments = comments.filter((c) => {
     if (c.status !== tab) return false;
     // Hide comments from other branches when we know both sides
     if (c.branch && currentBranch && c.branch !== currentBranch) return false;
+    if (!matchesPageFilter(c)) return false;
     return true;
   });
 
@@ -134,17 +155,62 @@ export function CommentSidebar({
         </div>
       </div>
 
+      {/* Page filter */}
+      <div
+        className="flex items-center gap-2 px-3 py-1.5 shrink-0"
+        style={{ borderBottom: '1px solid var(--vscode-panel-border, #444)' }}
+      >
+        <label htmlFor="page-filter" className="text-xs shrink-0" style={{ color: 'var(--vscode-foreground)', opacity: 0.6 }}>
+          Page
+        </label>
+        <select
+          id="page-filter"
+          value={pageFilter}
+          onChange={(e) => setPageFilter(e.target.value)}
+          className="flex-1 min-w-0 text-xs rounded px-1.5 py-1 outline-none"
+          aria-label="Show comments for page"
+          style={{
+            background: 'var(--vscode-dropdown-background, #3c3c3c)',
+            color: 'var(--vscode-dropdown-foreground, #ccc)',
+            border: '1px solid var(--vscode-dropdown-border, #555)',
+          }}
+        >
+          <option value="current">This page · {pageLabel(currentPage)}</option>
+          <option value="all">All pages ({tabTotal})</option>
+          {otherPages.length > 0 && (
+            <optgroup label="Other pages">
+              {otherPages.map((p) => (
+                <option key={p} value={p}>
+                  {pageLabel(p)} ({pageCounts.get(p)})
+                </option>
+              ))}
+            </optgroup>
+          )}
+        </select>
+      </div>
+
       {/* Comment list */}
       <div className="flex-1 overflow-y-auto">
         {visibleComments.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full px-4 text-center" style={{ minHeight: '120px' }}>
+          <div className="flex flex-col items-center justify-center h-full px-4 text-center gap-1" style={{ minHeight: '120px' }}>
             <span className="text-xs opacity-30" style={{ color: 'var(--vscode-foreground)' }}>
               {comments.length === 0
                 ? 'No comments yet. Enter comment mode and click any element to leave one.'
-                : tab === 'open'
-                  ? 'No open comments.'
-                  : 'No resolved comments yet.'}
+                : pageFilter === 'current'
+                  ? `No ${tab === 'open' ? 'open' : 'resolved'} comments on this page.`
+                  : tab === 'open'
+                    ? 'No open comments.'
+                    : 'No resolved comments yet.'}
             </span>
+            {comments.length > 0 && pageFilter === 'current' && tabTotal > 0 && (
+              <button
+                onClick={() => setPageFilter('all')}
+                className="text-xs underline"
+                style={{ color: '#FF6F00', opacity: 0.8, cursor: 'pointer' }}
+              >
+                Show all pages ({tabTotal})
+              </button>
+            )}
           </div>
         ) : (
           pages.map((page) => {
@@ -192,9 +258,14 @@ export function CommentSidebar({
                   </span>
                 </div>
 
-                {/* Comments in this page — newest first */}
+                {/* Comments in this page — newest first, but orphaned (element not on page) last */}
                 {[...pageComments]
-                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                  .sort((a, b) => {
+                    const ao = orphanedCommentIds?.has(a.id) ? 1 : 0;
+                    const bo = orphanedCommentIds?.has(b.id) ? 1 : 0;
+                    if (ao !== bo) return ao - bo;
+                    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                  })
                   .map((comment) => {
                     const isFocused = focusedCommentId === comment.id;
                     const isUnread = unreadIds.has(comment.id);

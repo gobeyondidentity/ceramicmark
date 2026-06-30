@@ -21,6 +21,16 @@
   "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "CeramicMark",
+      "properties": {
+        "ceramicMark.browserPath": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to a Chrome, Edge, or Chromium executable for Browser (real-browser) preview mode. Leave empty to auto-detect."
+        }
+      }
+    },
     "commands": [
       {
         "command": "ceramicMark.openPreview",
@@ -117,6 +127,7 @@
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.85.0",
+    "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
     "@vscode/test-electron": "^2.3.0",
@@ -128,5 +139,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/gobeyondidentity/ceramicmark"
+  },
+  "dependencies": {
+    "ws": "^8.21.0"
   }
 }

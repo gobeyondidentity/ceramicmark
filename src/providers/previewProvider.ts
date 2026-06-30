@@ -7,11 +7,16 @@ import type { MemberStore } from '../store/memberStore.js';
 import type { Comment, ExtensionMessage, WebviewMessage, Reply } from '../types.js';
 import { getGitIdentity, getGitBranch, hasUncommittedIdeComments } from '../auth/gitIdentity.js';
 import { HttpProxy } from '../services/httpProxy.js';
+import { CdpSurface } from '../surfaces/CdpSurface.js';
 
 export class PreviewProvider {
   public static readonly viewType = 'ceramicMark.preview';
   private panel: vscode.WebviewPanel | undefined;
   private proxy: HttpProxy | undefined;
+  private mode: 'proxy' | 'cdp' = 'proxy';
+  private cdpSurface: CdpSurface | undefined;
+  private cdpStarted = false;
+  private lastTargetUrl: string | undefined;
   private readonly outputChannel = vscode.window.createOutputChannel('CeramicMark Proxy');
   private readonly onCommentChangedEmitter = new vscode.EventEmitter<void>();
   public readonly onCommentChanged = this.onCommentChangedEmitter.event;
@@ -55,6 +60,9 @@ export class PreviewProvider {
       this.panel = undefined;
       this.proxy?.stop();
       this.proxy = undefined;
+      this.cdpSurface?.dispose();
+      this.cdpSurface = undefined;
+      this.cdpStarted = false;
     });
 
     // Watch .git/HEAD so the branch display updates immediately on branch switch
@@ -86,6 +94,11 @@ export class PreviewProvider {
         try { parsed = new URL(message.url); } catch { break; }
         if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') break;
         const displayUrl = message.url;
+        this.lastTargetUrl = displayUrl;
+        if (this.mode === 'cdp') {
+          await this.startOrNavigateCdp(displayUrl);
+          break;
+        }
         if (!this.proxy) {
           this.proxy = new HttpProxy(displayUrl, this.outputChannel);
         } else {
@@ -94,6 +107,75 @@ export class PreviewProvider {
         const port = await this.proxy.port;
         const proxyUrl = `http://127.0.0.1:${port}`;
         this.postMessage({ type: 'proxyReady', displayUrl, proxyUrl });
+        break;
+      }
+
+      case 'setPreviewMode': {
+        if (message.mode === this.mode) break;
+        this.mode = message.mode;
+        if (message.mode === 'proxy') {
+          this.cdpSurface?.dispose();
+          this.cdpSurface = undefined;
+          this.cdpStarted = false;
+        }
+        // The proxy instance is left intact; the webview re-sends setTargetUrl after
+        // a mode switch, which (re)connects the appropriate surface.
+        this.postMessage({ type: 'modeChanged', mode: message.mode });
+        break;
+      }
+
+      case 'resizeViewport': {
+        if (this.mode === 'cdp' && this.cdpSurface) {
+          await this.cdpSurface.setViewport(message.cssWidth, message.cssHeight, message.dpr);
+        }
+        break;
+      }
+
+      case 'inputEvent': {
+        if (this.mode === 'cdp' && this.cdpSurface) {
+          this.cdpSurface.dispatchInput(message.event);
+        }
+        break;
+      }
+
+      case 'cmToPage': {
+        if (this.mode === 'cdp' && this.cdpSurface) {
+          this.cdpSurface.sendToPage(message.payload);
+        }
+        break;
+      }
+
+      case 'browserNav': {
+        if (this.mode === 'cdp' && this.cdpSurface) {
+          await this.cdpSurface.browserNav(message.action);
+        }
+        break;
+      }
+
+      case 'navigateBrowser': {
+        if (this.mode === 'cdp' && this.cdpSurface) {
+          this.cdpSurface.navigateToPath(message.path);
+        }
+        break;
+      }
+
+      case 'pickBrowserPath': {
+        const picked = await vscode.window.showOpenDialog({
+          canSelectMany: false,
+          openLabel: 'Use this browser',
+          title: 'Select a Chrome, Edge, or Chromium executable',
+        });
+        if (picked && picked[0]) {
+          await vscode.workspace
+            .getConfiguration('ceramicMark')
+            .update('browserPath', picked[0].fsPath, vscode.ConfigurationTarget.Global);
+          if (this.mode === 'cdp' && this.lastTargetUrl) {
+            this.cdpSurface?.dispose();
+            this.cdpSurface = undefined;
+            this.cdpStarted = false;
+            await this.startOrNavigateCdp(this.lastTargetUrl);
+          }
+        }
         break;
       }
 
@@ -239,6 +321,21 @@ export class PreviewProvider {
 
   private postMessage(message: ExtensionMessage): void {
     this.panel?.webview.postMessage(message);
+  }
+
+  /** Launch Chrome (first time) or navigate the existing instance, for CDP browser mode. */
+  private async startOrNavigateCdp(url: string): Promise<void> {
+    if (!this.cdpSurface) {
+      const userDataDir = path.join(this.context.globalStorageUri.fsPath, 'cdp-profile');
+      const browserPath = vscode.workspace.getConfiguration('ceramicMark').get<string>('browserPath') || undefined;
+      this.cdpSurface = new CdpSurface(userDataDir, (m) => this.postMessage(m), browserPath, this.outputChannel);
+    }
+    if (!this.cdpStarted) {
+      this.cdpStarted = true;
+      await this.cdpSurface.start(url);
+    } else {
+      this.cdpSurface.navigate(url);
+    }
   }
 
   public toggleCommentMode(): void {

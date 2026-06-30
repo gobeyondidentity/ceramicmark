@@ -11,7 +11,7 @@ Click any element in the running app to anchor a comment to it. No switching too
 1. Open any project in VS Code or Cursor
 2. Start your dev server as normal (`npm run dev`, etc.)
 3. Open the CeramicMark panel from the activity bar
-4. On the splash screen, enter your localhost URL (e.g. `http://localhost:3000`) and press Enter
+4. On the splash screen, enter your dev server URL — `localhost`, a port, a path, or a LAN IP all work (e.g. `http://localhost:3000`, `localhost:5173/dashboard`, `192.168.1.5:3000`) — and press Enter
 5. Press **C** (or click the Comment button) to enter comment mode — the preview gets an orange border
 6. Click any element in the preview to anchor a comment to it
 7. Your teammate pulls the repo, opens CeramicMark, and sees your comment markers on the same elements
@@ -34,6 +34,10 @@ Comments are stored in `.ide-comments/comments.json` inside your project — the
 - **Branch-scoped view** — comments store the branch they were made on; the toolbar shows the active git branch and updates automatically when you switch branches; comments from other branches are hidden
 - **Commit reminder** — a toast appears at every 10-comment milestone when `.ide-comments/` has uncommitted changes, so you don't forget to share with the team
 - **Orphaned comment indicator** — if the element a comment was anchored to no longer exists in the DOM, a warning icon appears on the sidebar card so teammates know the anchor is stale
+- **Address bar with path navigation** — the URL bar is a full address bar: enter any path (e.g. `localhost:3000/dashboard`) to open it directly, and the bar updates to track your in-app navigation so you always know which page you're on. Switch to a different origin (including a LAN IP) at any time by typing it and pressing Enter
+- **IP address support** — preview a dev server bound to a network IP (e.g. `192.168.1.5:3000`), not just `localhost`; traffic is routed through a local proxy so the preview loads without browser mixed-content blocking
+- **HTTPS dev servers** — preview servers served over `https://` (including self-signed certs, common in local dev) work in addition to `http://`
+- **Login / session support** — apps with their own login page work: session cookies set after sign-in are preserved through the preview, and redirects (e.g. login → dashboard) stay inside the preview, so you can comment on authenticated screens. *(Cross-origin single sign-on — e.g. redirecting to a separate Keycloak/Okta host — is not yet supported; see roadmap.)*
 - **Refresh preview** — click the refresh icon in the URL bar or press `⌘R` / `Ctrl+R` to reload the previewed page without leaving the panel
 - **Pin visibility toggle** — hide or show all comment pins on the preview with the eye icon or `V` key, so you can view the page without visual clutter
 - **Keyboard shortcuts** — `C` toggles comment mode; `R` resolves/reopens the focused comment; `V` toggles pin visibility; `S` toggles sidebar; `⌘R` refreshes the preview; `Esc` exits comment mode
@@ -110,4 +114,5 @@ git config user.email
 - [ ] Link comment pins directly to specific lines of source code
 - [ ] Standalone browser mode — run as a local web app (`ceramicmark serve`) without VS Code, using the same HTTP proxy and comment storage
 - [ ] Upgrade Vite to v8 in the webview — resolves remaining esbuild dev-server vulnerability; deferred as a breaking change requiring config migration *(low urgency: only affects local dev, not published extension)*
+- [ ] Cross-origin SSO support — let the preview follow a redirect-based login to a separate identity-provider host (Keycloak/Okta/Auth0) and back. Requires either proxying the IdP origin too (rewriting `Location`, cookies, and the `redirect_uri` across origins) or previewing in a real browser context where the user's existing session applies
 - [ ] Auto-detect running dev servers on the splash screen — scan common localhost ports (3000, 3001, 4000, 5173, 8080, etc.) on activation and pre-fill the URL input with the detected address so the user only needs to press Enter; if multiple servers are found, show a small dropdown below the input listing all candidates so the user can select the right one before confirming

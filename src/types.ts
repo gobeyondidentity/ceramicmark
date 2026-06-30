@@ -1,3 +1,5 @@
+import type { CmPageToHost, CmHostToPage, CdpInputEvent, ChromeStatus } from './companion/cmProtocol.js';
+
 export interface Author {
   name: string;
   email: string;
@@ -80,7 +82,23 @@ export type ExtensionMessage =
   | { type: 'loadMembers'; members: Member[] }
   | { type: 'setBranch'; branch: string }
   | { type: 'proxyReady'; displayUrl: string; proxyUrl: string }
-  | { type: 'toggleCommentMode' };
+  | { type: 'toggleCommentMode' }
+  // --- Browser (CDP) mode ---
+  | { type: 'modeChanged'; mode: 'proxy' | 'cdp' }
+  | { type: 'chromeStatus'; status: ChromeStatus; url?: string }
+  | { type: 'chromeNotFound' }
+  | {
+      type: 'screencastFrame';
+      dataUri: string;
+      deviceWidth: number;
+      deviceHeight: number;
+      pageScaleFactor: number;
+      scrollOffsetX: number;
+      scrollOffsetY: number;
+    }
+  | { type: 'requestLoginPopout' }
+  | { type: 'cmFromPage'; payload: CmPageToHost }
+  | { type: 'cdpDebug'; produced: number; screencasting: boolean; error?: string };
 
 // Messages sent from the webview → extension host
 export type WebviewMessage =
@@ -91,4 +109,13 @@ export type WebviewMessage =
   | { type: 'resolveComment'; commentId: string }
   | { type: 'reopenComment'; commentId: string }
   | { type: 'deleteComment'; commentId: string }
-  | { type: 'requestComments' };
+  | { type: 'requestComments' }
+  // --- Browser (CDP) mode ---
+  | { type: 'setPreviewMode'; mode: 'proxy' | 'cdp' }
+  | { type: 'inputEvent'; event: CdpInputEvent }
+  | { type: 'resizeViewport'; cssWidth: number; cssHeight: number; dpr: number }
+  | { type: 'cmToPage'; payload: CmHostToPage }
+  | { type: 'pickBrowserPath' }
+  | { type: 'browserNav'; action: 'back' | 'forward' | 'reload' }
+  | { type: 'navigateBrowser'; path: string }
+  | { type: 'requestScreencastResume' };

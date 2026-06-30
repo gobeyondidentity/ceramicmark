@@ -8,7 +8,10 @@ const buildOptions = {
   entryPoints: ['src/extension.ts'],
   bundle: true,
   outfile: 'dist/extension.js',
-  external: ['vscode'],
+  // 'vscode' is provided by the host. 'bufferutil'/'utf-8-validate' are optional native
+  // speedups for 'ws' that it require()s inside try/catch — keep them external so the
+  // bundle builds without them and ws falls back to its pure-JS path at runtime.
+  external: ['vscode', 'bufferutil', 'utf-8-validate'],
   format: 'cjs',
   platform: 'node',
   target: 'node18',

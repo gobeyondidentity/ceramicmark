@@ -5,9 +5,14 @@ import type { Comment, ElementAnchor } from './types.js';
 
 interface PreviewFrameProps {
   iframeUrl: string;
+  /** Bumped on every explicit (re)load — used as the iframe's React key to force a remount. */
+  iframeKey: number;
+  /** Proxy root URL (no path) — base for building in-iframe navigation targets. */
+  proxyBase: string;
   displayUrl: string;
   commentMode: boolean;
   focusedComment: Comment | null;
+  focusedOrphaned?: boolean;
   hoveredComment: Comment | null;
   focusedPinPosition: { x: number; y: number } | null;
   pendingAnchor: Partial<ElementAnchor> | null;
@@ -28,9 +33,12 @@ interface PreviewFrameProps {
 
 export function PreviewFrame({
   iframeUrl,
+  iframeKey,
+  proxyBase,
   displayUrl,
   commentMode,
   focusedComment,
+  focusedOrphaned,
   hoveredComment,
   focusedPinPosition,
   pendingAnchor,
@@ -149,7 +157,7 @@ export function PreviewFrame({
   // re-clicking the same sidebar comment always re-navigates, even if focusedComment
   // hasn't changed. Uses refs so the effect always sees the latest page + comment.
   useEffect(() => {
-    if (!iframeUrl) return;
+    if (!proxyBase) return;
     const fc = focusedCommentRef.current;
     if (!fc) {
       iframeRef.current?.contentWindow?.postMessage({ type: 'cm-clear-highlight' }, '*');
@@ -159,7 +167,7 @@ export function PreviewFrame({
     if (commentPage !== currentPageRef.current) {
       // Change src — handleIframeLoad will send markers + highlight once the DOM is ready
       if (iframeRef.current) {
-        iframeRef.current.src = iframeUrl + commentPage;
+        iframeRef.current.src = proxyBase + commentPage;
       }
     } else {
       // Already on the right page — highlight now
@@ -175,7 +183,7 @@ export function PreviewFrame({
         '*',
       );
     }
-  }, [focusCommentTs, iframeUrl]);
+  }, [focusCommentTs, proxyBase]);
 
   // Show a subtle dashed outline on hover without navigating or opening a popover
   useEffect(() => {
@@ -241,6 +249,7 @@ export function PreviewFrame({
     >
       {iframeUrl ? (
         <iframe
+          key={iframeKey}
           ref={iframeRef}
           src={iframeUrl}
           className="w-full h-full border-0"
@@ -344,6 +353,7 @@ export function PreviewFrame({
             <CommentThread
               comment={focusedComment}
               memberNames={memberNames}
+              orphaned={focusedOrphaned}
               onClose={onClearFocus}
             />
           </div>
