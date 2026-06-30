@@ -1,6 +1,6 @@
 # CeramicMark
 
-An extension that lets product builders leave visual comments directly on a live localhost preview — inside VS Code and Cursor.
+An extension that lets product builders leave visual comments directly on a live app preview — inside VS Code and Cursor. Comment on any element of your running app, **including pages behind a login or single sign-on**.
 
 Click any element in the running app to anchor a comment to it. No switching tools, no screenshots, no Slack threads with "the button on the left... no the other one."
 
@@ -20,29 +20,57 @@ Comments are stored in `.ide-comments/comments.json` inside your project — the
 
 ---
 
+## Preview modes
+
+CeramicMark has two ways to render your app. You switch between them with the **Proxy / Browser** toggle in the toolbar, and CeramicMark will auto-switch when it needs to.
+
+- **Proxy mode** (default) — a fast preview of your dev server inside the panel. Great for `localhost`, LAN IPs, subpages, HTTPS dev servers, and apps with their own login page.
+- **Browser mode** — previews your app in a **real Chrome/Edge instance**, driven behind the scenes and streamed into the panel (with mouse, scroll, and keyboard). This is what makes **cross-origin single sign-on** work: you log in normally in the real browser, then comment on the authenticated app right inside VS Code. CeramicMark **auto-switches to Browser mode** when it detects your app redirecting to a separate sign-in site (e.g. Keycloak/Okta/Auth0).
+
+Browser mode launches the Chrome/Edge already installed on your machine, in its own isolated profile — it never touches your day-to-day browser profile.
+
+---
+
 ## Features
 
+### Commenting
 - **Element-anchored comments** — click any element in the live preview to attach a comment directly to it; a marker badge appears on the element for all teammates
 - **Smart element labels** — comments are labeled using `aria-label`, placeholder text, alt text, heading content, or element ID so you always know what was clicked
 - **Marker persistence** — badges reappear automatically as you navigate between pages and views, including React-state apps that never change the URL
-- **Sidebar comment list** — all comments listed in a collapsible sidebar; click any comment to jump to and highlight the element in the preview; hover a comment card to see a dashed outline on the element without navigating
-- **Comments / Resolved tabs** — sidebar has a segmented control to switch between open and resolved comments
 - **Threaded replies** — reply to any comment directly in the sidebar
 - **Resolve / reopen** — mark comments as resolved when the issue is addressed; resolved comments move to the Resolved tab and their markers are removed from the preview
 - **@mentions** — type `@` in any comment or reply to mention a teammate by name
 - **Read/unread tracking** — new comments from others are marked unread with a dot indicator (session-based)
+
+### Comment sidebar
+- **Page-scoped by default** — the sidebar shows comments for the page you're currently viewing; a **page dropdown** lets you switch to any other page (with counts) or see all pages at once
+- **Jump to any comment** — click a comment to navigate the preview to its page (even across routes) and highlight the element; hover a card to see a dashed outline without navigating
+- **Comments / Resolved tabs** — segmented control to switch between open and resolved comments
+- **Orphaned comment handling** — if a comment's element no longer exists on the page, the sidebar shows a warning icon, the comment box shows an **"Element no longer exists"** tag, and the comment sorts to the bottom of the list
 - **Branch-scoped view** — comments store the branch they were made on; the toolbar shows the active git branch and updates automatically when you switch branches; comments from other branches are hidden
 - **Commit reminder** — a toast appears at every 10-comment milestone when `.ide-comments/` has uncommitted changes, so you don't forget to share with the team
-- **Orphaned comment indicator** — if the element a comment was anchored to no longer exists in the DOM, a warning icon appears on the sidebar card so teammates know the anchor is stale
-- **Address bar with path navigation** — the URL bar is a full address bar: enter any path (e.g. `localhost:3000/dashboard`) to open it directly, and the bar updates to track your in-app navigation so you always know which page you're on. Switch to a different origin (including a LAN IP) at any time by typing it and pressing Enter
-- **IP address support** — preview a dev server bound to a network IP (e.g. `192.168.1.5:3000`), not just `localhost`; traffic is routed through a local proxy so the preview loads without browser mixed-content blocking
-- **HTTPS dev servers** — preview servers served over `https://` (including self-signed certs, common in local dev) work in addition to `http://`
-- **Login / session support** — apps with their own login page work: session cookies set after sign-in are preserved through the preview, and redirects (e.g. login → dashboard) stay inside the preview, so you can comment on authenticated screens. *(Cross-origin single sign-on — e.g. redirecting to a separate Keycloak/Okta host — is not yet supported; see roadmap.)*
-- **Refresh preview** — click the refresh icon in the URL bar or press `⌘R` / `Ctrl+R` to reload the previewed page without leaving the panel
-- **Pin visibility toggle** — hide or show all comment pins on the preview with the eye icon or `V` key, so you can view the page without visual clutter
+
+### Preview & navigation
+- **Address bar with path navigation** — the URL bar is a full address bar: enter any path (e.g. `localhost:3000/dashboard`) to open it directly, and the bar tracks your in-app navigation so you always know which page you're on. Switch origin (including a LAN IP) anytime by typing it and pressing Enter
+- **IP address support** — preview a dev server bound to a network IP (e.g. `192.168.1.5:3000`), not just `localhost`
+- **HTTPS dev servers** — preview servers served over `https://`, including self-signed certs common in local dev
+- **Works behind a login** — apps with their own sign-in page work in Proxy mode (session cookies and redirects are preserved). For **cross-origin single sign-on** (a separate Keycloak/Okta/Auth0 host), Browser mode runs the real login and lets you comment on the authenticated app
+- **Real-browser (Browser) mode** — preview in a real Chrome/Edge streamed into the panel; the browser window comes forward for native sign-in, then hands you back to the embedded view; follows links that open new tabs/popups
+- **Back / Forward / Refresh** — browser navigation controls in Browser mode (Back also un-strands you from a tab a link opened); `⌘R` / `Ctrl+R` refreshes the previewed page in either mode
+- **Pin visibility toggle** — hide or show all comment pins with the eye icon or `V` key, so you can view the page without visual clutter
+
+### General
 - **Keyboard shortcuts** — `C` toggles comment mode; `R` resolves/reopens the focused comment; `V` toggles pin visibility; `S` toggles sidebar; `⌘R` refreshes the preview; `Esc` exits comment mode
-- **Responsive sidebar** — auto-collapses below 640px so the preview always gets enough space
+- **Sidebar** — closed by default; open it with `S` or the toolbar toggle; auto-collapses on narrow panels
 - **Version label** — current extension version shown at the bottom of the splash screen for quick identification
+
+---
+
+## Settings
+
+- `ceramicMark.browserPath` — absolute path to a Chrome, Edge, or Chromium executable for Browser mode. Leave empty to auto-detect; set it if your browser is installed somewhere unusual.
+
+Browser mode requires a Chromium-family browser (Chrome, Edge, or Chromium) installed on your machine.
 
 ---
 
@@ -50,11 +78,11 @@ Comments are stored in `.ide-comments/comments.json` inside your project — the
 
 Use this if CeramicMark isn't on the marketplace yet and you need to run it locally.
 
-**Requirements:** Node.js, VS Code
+**Requirements:** Node.js, VS Code, and (for Browser mode) Chrome/Edge/Chromium
 
 1. Clone the repo and open it in VS Code:
    ```bash
-   git clone https://github.com/ceramicmark/ceramic-mark
+   git clone https://github.com/gobeyondidentity/ceramicmark
    cd ceramic-mark
    code .
    ```
@@ -73,7 +101,7 @@ Use this if CeramicMark isn't on the marketplace yet and you need to run it loca
 
 6. Start your dev server for that project (e.g. `npm run dev`)
 
-7. Click the CeramicMark icon in the activity bar, enter your localhost URL on the splash screen, and press Enter
+7. Click the CeramicMark icon in the activity bar, enter your dev server URL on the splash screen, and press Enter
 
 ---
 
@@ -112,7 +140,6 @@ git config user.email
 - [ ] GitHub/GitLab sign-in for verified identity and avatars *(currently deferred — git config identity is sufficient for internal teams using git-based storage; sign-in becomes worthwhile as a prerequisite for cloud sync, where there's no commit audit trail to fall back on)*
 - [ ] Onboarding setting: choose commit vs. gitignore for comment storage
 - [ ] Link comment pins directly to specific lines of source code
-- [ ] Standalone browser mode — run as a local web app (`ceramicmark serve`) without VS Code, using the same HTTP proxy and comment storage
+- [ ] Standalone CLI mode — run as a local web app (`ceramicmark serve`) outside VS Code, using the same comment storage
 - [ ] Upgrade Vite to v8 in the webview — resolves remaining esbuild dev-server vulnerability; deferred as a breaking change requiring config migration *(low urgency: only affects local dev, not published extension)*
-- [ ] Cross-origin SSO support — let the preview follow a redirect-based login to a separate identity-provider host (Keycloak/Okta/Auth0) and back. Requires either proxying the IdP origin too (rewriting `Location`, cookies, and the `redirect_uri` across origins) or previewing in a real browser context where the user's existing session applies
 - [ ] Auto-detect running dev servers on the splash screen — scan common localhost ports (3000, 3001, 4000, 5173, 8080, etc.) on activation and pre-fill the URL input with the detected address so the user only needs to press Enter; if multiple servers are found, show a small dropdown below the input listing all candidates so the user can select the right one before confirming
