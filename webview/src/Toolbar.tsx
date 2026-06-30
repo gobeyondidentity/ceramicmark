@@ -11,6 +11,8 @@ interface ToolbarProps {
   onModeChange: (mode: 'proxy' | 'cdp') => void;
   onUrlChange: (url: string) => void;
   onRefresh: () => void;
+  onBack: () => void;
+  onForward: () => void;
   onTogglePins: () => void;
   onToggleCommentMode: () => void;
   onToggleSidebar: () => void;
@@ -26,6 +28,8 @@ export function Toolbar({
   onModeChange,
   onUrlChange,
   onRefresh,
+  onBack,
+  onForward,
   onTogglePins,
   onToggleCommentMode,
   onToggleSidebar,
@@ -75,6 +79,38 @@ export function Toolbar({
             .replace(/<svg /, '<svg height="18" style="width:auto;height:18px;" '),
           }}
         />
+
+        {/* Browser navigation (Browser mode only) — keeps the user from getting stranded */}
+        {previewMode === 'cdp' && (
+          <div className="shrink-0 flex items-center gap-0.5">
+            <button
+              type="button"
+              onClick={onBack}
+              title="Back"
+              aria-label="Go back"
+              className="flex items-center px-1 py-1 rounded hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+              style={{ color: '#FF6F00' }}
+            >
+              {/* Bootstrap Icon: arrow-left */}
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                <path fillRule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={onForward}
+              title="Forward"
+              aria-label="Go forward"
+              className="flex items-center px-1 py-1 rounded hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+              style={{ color: '#FF6F00' }}
+            >
+              {/* Bootstrap Icon: arrow-right */}
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                <path fillRule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"/>
+              </svg>
+            </button>
+          </div>
+        )}
 
         {/* URL bar */}
         <form

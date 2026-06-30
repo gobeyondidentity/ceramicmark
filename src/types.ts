@@ -116,4 +116,5 @@ export type WebviewMessage =
   | { type: 'resizeViewport'; cssWidth: number; cssHeight: number; dpr: number }
   | { type: 'cmToPage'; payload: CmHostToPage }
   | { type: 'pickBrowserPath' }
+  | { type: 'browserNav'; action: 'back' | 'forward' | 'reload' }
   | { type: 'requestScreencastResume' };

@@ -138,6 +138,20 @@ export class PreviewProvider {
         break;
       }
 
+      case 'cmToPage': {
+        if (this.mode === 'cdp' && this.cdpSurface) {
+          this.cdpSurface.sendToPage(message.payload);
+        }
+        break;
+      }
+
+      case 'browserNav': {
+        if (this.mode === 'cdp' && this.cdpSurface) {
+          await this.cdpSurface.browserNav(message.action);
+        }
+        break;
+      }
+
       case 'pickBrowserPath': {
         const picked = await vscode.window.showOpenDialog({
           canSelectMany: false,
