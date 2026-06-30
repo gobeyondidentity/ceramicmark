@@ -127,4 +127,5 @@ export type WebviewMessage =
   | { type: 'cmToPage'; payload: CmHostToPage }
   | { type: 'pickBrowserPath' }
   | { type: 'browserNav'; action: 'back' | 'forward' | 'reload' }
+  | { type: 'navigateBrowser'; path: string }
   | { type: 'requestScreencastResume' };

@@ -152,6 +152,13 @@ export class PreviewProvider {
         break;
       }
 
+      case 'navigateBrowser': {
+        if (this.mode === 'cdp' && this.cdpSurface) {
+          this.cdpSurface.navigateToPath(message.path);
+        }
+        break;
+      }
+
       case 'pickBrowserPath': {
         const picked = await vscode.window.showOpenDialog({
           canSelectMany: false,

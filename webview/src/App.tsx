@@ -535,6 +535,7 @@ export function App(): React.ReactElement {
   const hoveredComment = state.hoveredCommentId
     ? (state.comments.find((c) => c.id === state.hoveredCommentId) ?? null)
     : null;
+  const focusedOrphaned = focusedComment ? state.orphanedCommentIds.has(focusedComment.id) : false;
 
   if (!state.displayUrl) {
     return <SplashScreen onUrlChange={handleUrlChange} />;
@@ -571,6 +572,7 @@ export function App(): React.ReactElement {
             pendingAnchor={state.pendingAnchor}
             pendingPosition={state.pendingPosition}
             focusedComment={focusedComment}
+            focusedOrphaned={focusedOrphaned}
             focusedPinPosition={state.focusedPinPosition}
             focusCommentTs={state.focusCommentTs}
             onPickBrowser={() => vscodeApi.postMessage({ type: 'pickBrowserPath' })}
@@ -587,6 +589,7 @@ export function App(): React.ReactElement {
           displayUrl={state.displayUrl}
           commentMode={state.commentMode}
           focusedComment={focusedComment}
+          focusedOrphaned={focusedOrphaned}
           hoveredComment={hoveredComment}
           focusedPinPosition={state.focusedPinPosition}
           pendingAnchor={state.pendingAnchor}

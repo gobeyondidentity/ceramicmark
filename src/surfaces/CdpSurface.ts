@@ -355,6 +355,13 @@ export class CdpSurface implements BrowserSurface {
     }
   }
 
+  /** Navigate the active tab to a path on the app origin (focusing a comment on another page). */
+  navigateToPath(path: string): void {
+    if (!this.client || !this.sessionId || !this.appOrigin) return;
+    const url = this.appOrigin + (path || '/');
+    this.client.send('Page.navigate', { url }, this.sessionId).catch(() => undefined);
+  }
+
   /** Host → page: deliver a cm-* message to the companion via window.__cmDeliver. */
   sendToPage(payload: CmHostToPage): void {
     if (!this.client || !this.sessionId) return;

@@ -12,6 +12,7 @@ interface PreviewFrameProps {
   displayUrl: string;
   commentMode: boolean;
   focusedComment: Comment | null;
+  focusedOrphaned?: boolean;
   hoveredComment: Comment | null;
   focusedPinPosition: { x: number; y: number } | null;
   pendingAnchor: Partial<ElementAnchor> | null;
@@ -37,6 +38,7 @@ export function PreviewFrame({
   displayUrl,
   commentMode,
   focusedComment,
+  focusedOrphaned,
   hoveredComment,
   focusedPinPosition,
   pendingAnchor,
@@ -351,6 +353,7 @@ export function PreviewFrame({
             <CommentThread
               comment={focusedComment}
               memberNames={memberNames}
+              orphaned={focusedOrphaned}
               onClose={onClearFocus}
             />
           </div>

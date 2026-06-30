@@ -14,6 +14,7 @@ interface CdpBrowserFrameProps {
   pendingAnchor: Partial<ElementAnchor> | null;
   pendingPosition: { x: number; y: number } | null;
   focusedComment: Comment | null;
+  focusedOrphaned?: boolean;
   focusedPinPosition: { x: number; y: number } | null;
   focusCommentTs: number;
   onPickBrowser: () => void;
@@ -33,7 +34,7 @@ const BUTTONS: Record<number, 'left' | 'middle' | 'right'> = { 0: 'left', 1: 'mi
 export function CdpBrowserFrame(props: CdpBrowserFrameProps): React.ReactElement {
   const {
     chromeStatus, commentMode, comments, pinsVisible, memberNames, currentPage,
-    pendingAnchor, pendingPosition, focusedComment, focusedPinPosition, focusCommentTs,
+    pendingAnchor, pendingPosition, focusedComment, focusedOrphaned, focusedPinPosition, focusCommentTs,
     onPickBrowser, onSwitchToProxy, onCancelPending, onClearFocus, onCommentModeExit,
   } = props;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -57,6 +58,10 @@ export function CdpBrowserFrame(props: CdpBrowserFrameProps): React.ReactElement
   const showCanvas = status === 'connected' || status === 'login' || status === 'authenticated' || status === 'launching';
 
   const sendToPage = (payload: CmHostToPage) => vscodeApi.postMessage({ type: 'cmToPage', payload });
+  const sendHighlight = (c: Comment) => sendToPage({
+    type: 'cm-highlight-element', elementId: c.anchor?.elementId, testId: c.anchor?.testId,
+    tag: c.anchor?.tag, text: c.anchor?.text, cssPath: c.anchor?.cssPath,
+  });
 
   // Host → page: comment-mode cursor.
   useEffect(() => {
@@ -74,18 +79,24 @@ export function CdpBrowserFrame(props: CdpBrowserFrameProps): React.ReactElement
     sendToPage({ type: 'cm-update-markers', comments: markerData });
   }, [comments, pinsVisible, currentPage]);
 
-  // Host → page: focus highlight when a comment is selected (e.g. from the sidebar).
+  // Focus a comment: if it lives on another page, navigate the browser there first (the
+  // highlight is re-applied once that page loads — see the currentPage effect below);
+  // otherwise highlight it now.
   useEffect(() => {
-    if (focusedComment) {
-      sendToPage({
-        type: 'cm-highlight-element', elementId: focusedComment.anchor?.elementId,
-        testId: focusedComment.anchor?.testId, tag: focusedComment.anchor?.tag,
-        text: focusedComment.anchor?.text, cssPath: focusedComment.anchor?.cssPath,
-      });
+    if (!focusedComment) { sendToPage({ type: 'cm-clear-highlight' }); return; }
+    const page = focusedComment.anchor?.pageUrl ?? '/';
+    if (page !== currentPage) {
+      vscodeApi.postMessage({ type: 'navigateBrowser', path: page });
     } else {
-      sendToPage({ type: 'cm-clear-highlight' });
+      sendHighlight(focusedComment);
     }
   }, [focusCommentTs]);
+
+  // After the page changes (incl. navigating to a focused comment's page), re-apply the
+  // highlight — the companion on the freshly loaded page needs it re-sent.
+  useEffect(() => {
+    if (focusedComment) sendHighlight(focusedComment);
+  }, [currentPage]);
 
   // Exit comment mode on Escape.
   useEffect(() => {
@@ -238,7 +249,7 @@ export function CdpBrowserFrame(props: CdpBrowserFrameProps): React.ReactElement
       {/* Focused comment popover */}
       {focusedComment && (
         <div style={popoverStyle(focusedPinPosition, 296, 340)}>
-          <CommentThread comment={focusedComment} memberNames={memberNames} onClose={onClearFocus} />
+          <CommentThread comment={focusedComment} memberNames={memberNames} orphaned={focusedOrphaned} onClose={onClearFocus} />
         </div>
       )}
 
