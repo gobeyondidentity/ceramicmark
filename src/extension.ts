@@ -85,6 +85,13 @@ export function activate(context: vscode.ExtensionContext): void {
 
     watcher,
   );
+
+  // The extension activates when the CeramicMark container is opened (the implicit
+  // onView:ceramicMark.comments event). Open the preview here rather than relying on
+  // the tree view's visibility: the Comments view defaults to collapsed, so its
+  // onDidChangeVisibility never fires on the initial icon click and the splash would
+  // otherwise never appear.
+  previewProvider.open();
 }
 
 export function deactivate(): void {
