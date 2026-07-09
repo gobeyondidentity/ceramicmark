@@ -8,7 +8,7 @@ Click any element in the running app to anchor a comment to it. No switching too
 
 ## Install
 
-Install from the Visual Studio Marketplace: search **CeramicMark** in the Extensions view (`Cmd+Shift+X`), or visit the [Marketplace listing](https://marketplace.visualstudio.com/items?itemName=beyondidentity.ceramic-mark). Works in VS Code and Cursor.
+Install from the Visual Studio Marketplace: search **CeramicMark** in the Extensions view (`Cmd+Shift+X`), or visit the [Marketplace listing](https://marketplace.visualstudio.com/items?itemName=AllanZiolkowski.ceramic-mark). Works in VS Code and Cursor.
 
 To run from source instead, see [Dev setup](#dev-setup-running-from-source) below.
 
@@ -90,7 +90,7 @@ Use this if you want to run the latest unreleased code, or develop CeramicMark i
 
 1. Clone the repo and open it in VS Code:
    ```bash
-   git clone https://github.com/gobeyondidentity/ceramicmark
+   git clone https://github.com/aziolkowskiux/ceramicmark_plugin
    cd ceramic-mark
    code .
    ```

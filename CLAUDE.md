@@ -53,9 +53,9 @@ When the user asks to bump the version (e.g. "update the vsix version", "increme
 
 **The `.vsix` is NOT committed to git.** `*.vsix` is gitignored and never has been tracked. There is no CI release workflow — packaging and publishing are manual. The git tag (step 5) is what ties a distributed `.vsix` back to its source commit.
 
-CeramicMark is published on the **Visual Studio Marketplace** (publisher `beyondidentity`, listing `beyondidentity.ceramic-mark`). Publishing is done **manually** — uploading the `.vsix` via the Marketplace publisher portal (there is no `vsce publish` automation in this repo). The same `.vsix` may also be shared out-of-band (Slack / shared drive) for beta builds ahead of a Marketplace upload.
+CeramicMark is published on the **Visual Studio Marketplace** (publisher `AllanZiolkowski`, listing `AllanZiolkowski.ceramic-mark`). Publishing is done **manually** — uploading the `.vsix` via the Marketplace publisher portal (there is no `vsce publish` automation in this repo). The manifest `publisher` in `package.json` **must** match the signed-in Marketplace publisher or the portal rejects the upload. The same `.vsix` may also be shared out-of-band (Slack / shared drive) for beta builds ahead of a Marketplace upload.
 
-Releasing is therefore: (a) get the code into the repo via a PR to `main` (work happens on feature branches; never push straight to `main`), then (b) build + tag the `.vsix` and upload it to the Marketplace. Note `gh` may default to a pull-only account — pushing/PRs against `gobeyondidentity/ceramicmark` require the `aziolk-beyond` collaborator account (`gh auth switch --user aziolk-beyond`).
+Releasing is therefore: (a) get the code into the repo via a PR to `main` (work happens on feature branches; never push straight to `main`), then (b) build + tag the `.vsix` and upload it to the Marketplace. The repo lives at `aziolkowskiux/ceramicmark_plugin` (personal account) — it was migrated from the former `gobeyondidentity/ceramicmark` org, so the publisher changed from `beyondidentity` accordingly. `gh` has multiple accounts logged in; if a push/PR is denied, switch to the account that owns the repo (`gh auth switch --user aziolkowskiux`).
 
 Launch for development: `Fn+F5` in VS Code opens an Extension Development Host.
 
