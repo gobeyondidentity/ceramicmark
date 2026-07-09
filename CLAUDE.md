@@ -49,7 +49,7 @@ When the user asks to bump the version (e.g. "update the vsix version", "increme
 4. Commit `package.json` (and any source changes) — **do not** try to commit the `.vsix`; it is gitignored (see below)
 5. Tag the release: `git tag -a v{version} -m "..."` and push the tag, so each shipped `.vsix` maps to an exact commit
 
-`npm run package` = `vsce package` — produces `ceramic-mark-{version}.vsix` in the project root.
+`npm run package` = `vsce package` — produces `ceramicmark-plugin-{version}.vsix` in the project root.
 
 **The `.vsix` is NOT committed to git.** `*.vsix` is gitignored and never has been tracked. There is no CI release workflow — packaging and publishing are manual. The git tag (step 5) is what ties a distributed `.vsix` back to its source commit.
 

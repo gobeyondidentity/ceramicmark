@@ -1,5 +1,5 @@
 {
-  "name": "ceramic-mark",
+  "name": "ceramicmark-plugin",
   "displayName": "CeramicMark",
   "description": "Figma-style visual comment pins on live UI previews, inside your IDE.",
   "version": "0.2.1",
